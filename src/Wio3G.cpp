@@ -77,6 +77,17 @@ bool Wio3G::IsBusy() const
 	return digitalRead(MODULE_STATUS_PIN) ? false : true;
 }
 
+bool Wio3G::IsRespond()
+{
+	Stopwatch sw;
+	sw.Restart();
+	while (!_AtSerial.WriteCommandAndReadResponse("AT", "^OK$", 500, NULL)) {
+		if (sw.ElapsedMilliseconds() >= 2000) return false;
+	}
+
+	return true;
+}
+
 bool Wio3G::Reset()
 {
 	digitalWrite(MODULE_RESET_PIN, HIGH);
@@ -180,6 +191,7 @@ bool Wio3G::TurnOnOrReset()
 {
 	std::string response;
 
+#if defined ARDUINO_WIO_3G
 	if (!IsBusy()) {
 		DEBUG_PRINTLN("Reset()");
 		if (!Reset()) return RET_ERR(false, E_UNKNOWN);
@@ -188,6 +200,16 @@ bool Wio3G::TurnOnOrReset()
 		DEBUG_PRINTLN("TurnOn()");
 		if (!TurnOn()) return RET_ERR(false, E_UNKNOWN);
 	}
+#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+	if (!IsBusy() && IsRespond()) {
+		DEBUG_PRINTLN("Reset()");
+		if (!Reset()) return RET_ERR(false, E_UNKNOWN);
+	}
+	else {
+		DEBUG_PRINTLN("TurnOn()");
+		if (!TurnOn()) return RET_ERR(false, E_UNKNOWN);
+	}
+#endif
 
 	Stopwatch sw;
 	sw.Restart();
@@ -198,7 +220,7 @@ bool Wio3G::TurnOnOrReset()
 	DEBUG_PRINTLN("");
 	delay(5000);	// TODO
 
-	if (!_AtSerial.WriteCommandAndReadResponse("ATE0", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.WriteCommandAndReadResponse("ATE0", "^OK$", 12000, NULL)) return RET_ERR(false, E_UNKNOWN);
 
 	sw.Restart();
 	while (true) {
@@ -374,6 +396,7 @@ bool Wio3G::WaitForPSRegistration(long timeout)
 	std::string response;
 	ArgumentParser parser;
 
+#if defined ARDUINO_WIO_3G
 	Stopwatch sw;
 	sw.Restart();
 	while (true) {
@@ -391,6 +414,25 @@ bool Wio3G::WaitForPSRegistration(long timeout)
 
 		if (sw.ElapsedMilliseconds() >= (unsigned long)timeout) return RET_ERR(false, E_UNKNOWN);
 	}
+#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+	Stopwatch sw;
+	sw.Restart();
+	while (true) {
+		int status;
+
+		_AtSerial.WriteCommand("AT+CEREG?");
+		if (!_AtSerial.ReadResponse("^\\+CEREG: (.*)$", 500, &response)) return RET_ERR(false, E_UNKNOWN);
+		parser.Parse(response.c_str());
+		if (parser.Size() < 2) return RET_ERR(false, E_UNKNOWN);
+		//resultCode = atoi(parser[0]);
+		status = atoi(parser[1]);
+		if (!_AtSerial.ReadResponse("^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (status == 0) return RET_ERR(false, E_UNKNOWN);
+		if (status == 1 || status == 5) break;
+
+		if (sw.ElapsedMilliseconds() >= (unsigned long)timeout) return RET_ERR(false, E_UNKNOWN);
+	}
+#endif
 
 	// for debug.
 #ifdef WIO_DEBUG
