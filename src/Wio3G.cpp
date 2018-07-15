@@ -379,6 +379,7 @@ bool Wio3G::WaitForCSRegistration(long timeout)
 		if (status == 1 || status == 5) break;
 
 		if (sw.ElapsedMilliseconds() >= (unsigned long)timeout) return RET_ERR(false, E_UNKNOWN);
+		delay(POLLING_INTERVAL);
 	}
 
 	// for debug.
@@ -413,6 +414,7 @@ bool Wio3G::WaitForPSRegistration(long timeout)
 		if (status == 1 || status == 5) break;
 
 		if (sw.ElapsedMilliseconds() >= (unsigned long)timeout) return RET_ERR(false, E_UNKNOWN);
+		delay(POLLING_INTERVAL);
 	}
 #elif defined ARDUINO_WIO_LTE_M1NB1_BG96
 	Stopwatch sw;
@@ -431,7 +433,8 @@ bool Wio3G::WaitForPSRegistration(long timeout)
 		if (status == 1 || status == 5) break;
 
 		if (sw.ElapsedMilliseconds() >= (unsigned long)timeout) return RET_ERR(false, E_UNKNOWN);
-	}
+		delay(POLLING_INTERVAL);
+}
 #endif
 
 	// for debug.
@@ -455,6 +458,7 @@ bool Wio3G::Activate(const char* accessPointName, const char* userName, const ch
 #ifdef WIO_DEBUG
 	_AtSerial.WriteCommandAndReadResponse("AT+CREG?", "^OK$", 500, NULL);
 	_AtSerial.WriteCommandAndReadResponse("AT+CGREG?", "^OK$", 500, NULL);
+	_AtSerial.WriteCommandAndReadResponse("AT+CEREG?", "^OK$", 500, NULL);
 #endif // WIO_DEBUG
 
 	StringBuilder str;
