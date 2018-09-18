@@ -79,12 +79,20 @@ bool Wio3G::IsBusy() const
 
 bool Wio3G::IsRespond()
 {
+	auto writeTimeout = SerialModule.getWriteTimeout();
+	SerialModule.setWriteTimeout(10);
+
 	Stopwatch sw;
 	sw.Restart();
 	while (!_AtSerial.WriteCommandAndReadResponse("AT", "^OK$", 500, NULL)) {
-		if (sw.ElapsedMilliseconds() >= 2000) return false;
+		if (sw.ElapsedMilliseconds() >= 2000)
+		{
+			SerialModule.setWriteTimeout(writeTimeout);
+			return false;
+		}
 	}
 
+	SerialModule.setWriteTimeout(writeTimeout);
 	return true;
 }
 
@@ -148,10 +156,10 @@ void Wio3G::Init()
 	// Status Indication
 	pinMode(MODULE_STATUS_PIN, INPUT_PULLUP);
 	// Main UART Interface
-	//pinMode(MODULE_CTS_PIN, INPUT);
-	//pinMode(MODULE_RTS_PIN, OUTPUT); digitalWrite(MODULE_RTS_PIN, LOW);
 	pinMode(MODULE_DTR_PIN, OUTPUT); digitalWrite(MODULE_DTR_PIN, LOW);
 
+	SerialModule.setReadBufferSize(100);
+	SerialModule.setWriteTimeout(0xffffffff);	// HAL_MAX_DELAY
 	SerialModule.begin(115200);
 
 	////////////////////
@@ -191,8 +199,7 @@ bool Wio3G::TurnOnOrReset()
 {
 	std::string response;
 
-#if defined ARDUINO_WIO_3G
-	if (!IsBusy()) {
+	if (IsRespond()) {
 		DEBUG_PRINTLN("Reset()");
 		if (!Reset()) return RET_ERR(false, E_UNKNOWN);
 	}
@@ -200,16 +207,6 @@ bool Wio3G::TurnOnOrReset()
 		DEBUG_PRINTLN("TurnOn()");
 		if (!TurnOn()) return RET_ERR(false, E_UNKNOWN);
 	}
-#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
-	if (!IsBusy() && IsRespond()) {
-		DEBUG_PRINTLN("Reset()");
-		if (!Reset()) return RET_ERR(false, E_UNKNOWN);
-	}
-	else {
-		DEBUG_PRINTLN("TurnOn()");
-		if (!TurnOn()) return RET_ERR(false, E_UNKNOWN);
-	}
-#endif
 
 	Stopwatch sw;
 	sw.Restart();
@@ -218,9 +215,11 @@ bool Wio3G::TurnOnOrReset()
 		if (sw.ElapsedMilliseconds() >= 10000) return RET_ERR(false, E_UNKNOWN);
 	}
 	DEBUG_PRINTLN("");
-	delay(5000);	// TODO
 
-	if (!_AtSerial.WriteCommandAndReadResponse("ATE0", "^OK$", 12000, NULL)) return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.WriteCommandAndReadResponse("ATE0", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+	_AtSerial.SetEcho(false);
+
+	if (!_AtSerial.WriteCommandAndReadResponse("AT+IFC=2,2", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 
 	sw.Restart();
 	while (true) {
@@ -353,7 +352,10 @@ bool Wio3G::GetTime(struct tm* tim)
 	tim->tm_sec = atoi(&parameter[16]);
 	tim->tm_wday = 0;
 	tim->tm_yday = 0;
-	tim->tm_isdst = -1;
+	tim->tm_isdst = 0;
+
+	// Update tm_wday and tm_yday
+	mktime(tim);
 
 	return RET_OK(true);
 }
@@ -458,7 +460,9 @@ bool Wio3G::Activate(const char* accessPointName, const char* userName, const ch
 #ifdef WIO_DEBUG
 	_AtSerial.WriteCommandAndReadResponse("AT+CREG?", "^OK$", 500, NULL);
 	_AtSerial.WriteCommandAndReadResponse("AT+CGREG?", "^OK$", 500, NULL);
+#if defined ARDUINO_WIO_LTE_M1NB1_BG96
 	_AtSerial.WriteCommandAndReadResponse("AT+CEREG?", "^OK$", 500, NULL);
+#endif // ARDUINO_WIO_LTE_M1NB1_BG96
 #endif // WIO_DEBUG
 
 	StringBuilder str;
