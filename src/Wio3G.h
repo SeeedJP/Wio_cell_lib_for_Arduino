@@ -93,3 +93,5 @@ public:
 	bool SendUSSD(const char* in, char* out, int outSize);
 
 };
+
+typedef Wio3G WioCellular;
