@@ -1,4 +1,4 @@
-#include <Wio3GforArduino.h>
+#include <WioCellLibforArduino.h>
 
 #define BUZZER_PIN      (WIO_D38)
 #define BUZZER_ON_TIME  (100)

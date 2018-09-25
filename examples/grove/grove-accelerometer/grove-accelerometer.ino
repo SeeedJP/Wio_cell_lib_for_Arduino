@@ -1,4 +1,4 @@
-#include <Wio3GforArduino.h>
+#include <WioCellLibforArduino.h>
 
 #define INTERVAL    (100)
 
@@ -6,7 +6,7 @@
 #define REG_POWER_CTL (0x2d)
 #define REG_DATAX0    (0x32)
 
-Wio3G Wio;
+WioCellular Wio;
 
 void setup() {
   delay(200);

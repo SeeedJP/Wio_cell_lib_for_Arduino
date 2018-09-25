@@ -1,10 +1,10 @@
-#include <Wio3GforArduino.h>
+#include <WioCellLibforArduino.h>
 
 #define ROTARY_ANGLE_PIN  (WIO_A4)
 #define INTERVAL          (500)
 #define BAR_LENGTH        (40)
 
-Wio3G Wio;
+WioCellular Wio;
 
 void setup() {
   delay(200);

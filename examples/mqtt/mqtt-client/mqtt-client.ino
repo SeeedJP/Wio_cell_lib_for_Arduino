@@ -1,4 +1,4 @@
-#include <Wio3GforArduino.h>
+#include <WioCellLibforArduino.h>
 #include <Wio3GClient.h>
 #include <PubSubClient.h>		// https://github.com/SeeedJP/pubsubclient
 #include <stdio.h>
@@ -16,7 +16,7 @@
 
 #define INTERVAL          (60000)
 
-Wio3G Wio;
+WioCellular Wio;
 Wio3GClient WioClient(&Wio);
 PubSubClient MqttClient;
 

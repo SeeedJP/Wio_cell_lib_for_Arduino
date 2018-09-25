@@ -1,4 +1,4 @@
-#include <Wio3GforArduino.h>
+#include <WioCellLibforArduino.h>
 #include <Ultrasonic.h>			// https://github.com/Seeed-Studio/Grove_Ultrasonic_Ranger
 
 #define ULTRASONIC_PIN  (WIO_D38)

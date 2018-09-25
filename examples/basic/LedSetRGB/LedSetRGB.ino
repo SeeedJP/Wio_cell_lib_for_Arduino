@@ -1,9 +1,9 @@
-#include <Wio3GforArduino.h>
+#include <WioCellLibforArduino.h>
 
 #define LED_VALUE (10)
 #define INTERVAL  (50)
 
-Wio3G Wio;
+WioCellular Wio;
 int Hue = 0;
 
 void setup() {

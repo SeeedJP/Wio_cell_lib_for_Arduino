@@ -1,4 +1,4 @@
-#include <Wio3GforArduino.h>
+#include <WioCellLibforArduino.h>
 
 #define APN               "soracom.io"
 #define USERNAME          "sora"
@@ -10,7 +10,7 @@
 
 #define INTERVAL          (60000)
 
-Wio3G Wio;
+WioCellular Wio;
   
 void setup() {
   delay(200);

@@ -1,7 +1,7 @@
-#include <Wio3GforArduino.h>
+#include <WioCellLibforArduino.h>
 #include <string.h>
 
-Wio3G Wio;
+WioCellular Wio;
 
 void setup() {
   delay(200);

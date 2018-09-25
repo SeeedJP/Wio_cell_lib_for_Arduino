@@ -1,4 +1,4 @@
-#include <Wio3GforArduino.h>
+#include <WioCellLibforArduino.h>
 
 #define MAGNETIC_SWITCH_PIN (WIO_D38)
 #define INTERVAL            (100)

@@ -1,9 +1,9 @@
-#include <Wio3GforArduino.h>
+#include <WioCellLibforArduino.h>
 
 #define INTERVAL        (60000)
 #define RECEIVE_TIMEOUT (10000)
 
-Wio3G Wio;
+WioCellular Wio;
   
 void setup() {
   delay(200);
