@@ -1,5 +1,5 @@
 #include <WioCellLibforArduino.h>
-#include <Wio3GClient.h>
+#include <WioCellularClient.h>
 #include <PubSubClient.h>		// https://github.com/SeeedJP/pubsubclient
 #include <stdio.h>
 
@@ -10,14 +10,14 @@
 #define MQTT_SERVER_HOST  "hostname"
 #define MQTT_SERVER_PORT  (1883)
 
-#define ID                "Wio3G"
+#define ID                "WioCell"
 #define OUT_TOPIC         "outTopic"
 #define IN_TOPIC          "inTopic"
 
 #define INTERVAL          (60000)
 
 WioCellular Wio;
-Wio3GClient WioClient(&Wio);
+WioCellularClient WioClient(&Wio);
 PubSubClient MqttClient;
 
 void callback(char* topic, byte* payload, unsigned int length) {
