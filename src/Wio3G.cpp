@@ -331,6 +331,7 @@ bool Wio3G::GetTime(struct tm* tim)
 	if (!_AtSerial.ReadResponse("^\\+QLTS: (.*)$", 500, &response)) return RET_ERR(false, E_UNKNOWN);
 	if (!_AtSerial.ReadResponse("^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 
+#if defined ARDUINO_WIO_3G
 	if (strlen(response.c_str()) != 24) return RET_ERR(false, E_UNKNOWN);
 	const char* parameter = response.c_str();
 
@@ -353,6 +354,29 @@ bool Wio3G::GetTime(struct tm* tim)
 	tim->tm_wday = 0;
 	tim->tm_yday = 0;
 	tim->tm_isdst = 0;
+#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+	if (strlen(response.c_str()) != 26) return RET_ERR(false, E_UNKNOWN);
+	const char* parameter = response.c_str();
+
+	if (parameter[0] != '"') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[5] != '/') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[8] != '/') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[11] != ',') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[14] != ':') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[17] != ':') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[23] != ',') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[25] != '"') return RET_ERR(false, E_UNKNOWN);
+
+	tim->tm_year = atoi(&parameter[1]) - 1900;
+	tim->tm_mon = atoi(&parameter[6]) - 1;
+	tim->tm_mday = atoi(&parameter[9]);
+	tim->tm_hour = atoi(&parameter[12]);
+	tim->tm_min = atoi(&parameter[15]);
+	tim->tm_sec = atoi(&parameter[18]);
+	tim->tm_wday = 0;
+	tim->tm_yday = 0;
+	tim->tm_isdst = 0;
+#endif
 
 	// Update tm_wday and tm_yday
 	mktime(tim);
