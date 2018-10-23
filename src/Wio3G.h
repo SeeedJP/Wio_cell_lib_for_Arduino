@@ -67,6 +67,7 @@ public:
 
 	int GetIMEI(char* imei, int imeiSize);
 	int GetIMSI(char* imsi, int imsiSize);
+	int GetICCID(char* iccid, int iccidSize);
 	int GetPhoneNumber(char* number, int numberSize);
 	int GetReceivedSignalStrength();
 	bool GetTime(struct tm* tim);

@@ -276,6 +276,21 @@ int Wio3G::GetIMSI(char* imsi, int imsiSize)
 	return RET_OK((int)strlen(imsi));
 }
 
+int Wio3G::GetICCID(char* iccid, int iccidSize)
+{
+	std::string response;
+
+	_AtSerial.WriteCommand("AT+QCCID");
+	if (!_AtSerial.ReadResponse("^\\+QCCID: (.*)$", 500, &response)) return RET_ERR(-1, E_UNKNOWN);
+	if (!_AtSerial.ReadResponse("^OK$", 500, NULL)) return RET_ERR(-1, E_UNKNOWN);
+	response.erase(response.size() - 1, 1);
+
+	if ((int)response.size() + 1 > iccidSize) return RET_ERR(-1, E_UNKNOWN);
+	strcpy(iccid, response.c_str());
+
+	return RET_OK((int)strlen(iccid));
+}
+
 int Wio3G::GetPhoneNumber(char* number, int numberSize)
 {
 	std::string response;
