@@ -33,6 +33,9 @@ void setup() {
   }
 
   SerialUSB.println("### Connecting to \"" APN "\".");
+#ifdef ARDUINO_WIO_LTE_M1NB1_BG96
+  Wio.SetSelectNetwork(WioCellular::SELECT_NETWORK_MODE_MANUAL_IMSI);
+#endif
   if (!Wio.Activate(APN, USERNAME, PASSWORD)) {
     SerialUSB.println("### ERROR! ###");
     return;

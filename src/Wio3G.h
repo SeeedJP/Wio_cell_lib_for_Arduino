@@ -22,11 +22,18 @@ public:
 		SOCKET_UDP,
 	};
 
+	enum SelectNetworkModeType {
+		SELECT_NETWORK_MODE_NONE,
+		SELECT_NETWORK_MODE_AUTOMATIC,
+		SELECT_NETWORK_MODE_MANUAL_IMSI,
+	};
+
 private:
 	SerialAPI _SerialAPI;
 	AtSerial _AtSerial;
 	Wio3GSK6812 _Led;
 	ErrorCodeType _LastErrorCode;
+	SelectNetworkModeType _SelectNetworkMode;
 
 private:
 	bool ReturnOk(bool value)
@@ -72,6 +79,7 @@ public:
 	int GetReceivedSignalStrength();
 	bool GetTime(struct tm* tim);
 
+	void SetSelectNetwork(SelectNetworkModeType mode);
 	bool WaitForCSRegistration(long timeout = 120000);
 	bool WaitForPSRegistration(long timeout = 120000);
 	bool Activate(const char* accessPointName, const char* userName, const char* password, long waitForRegistTimeout = 120000);

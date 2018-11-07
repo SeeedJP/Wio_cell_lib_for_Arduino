@@ -134,7 +134,7 @@ bool Wio3G::ReadResponseCallback(const char* response)
 	return false;
 }
 
-Wio3G::Wio3G() : _SerialAPI(&SerialModule), _AtSerial(&_SerialAPI, this), _Led()
+Wio3G::Wio3G() : _SerialAPI(&SerialModule), _AtSerial(&_SerialAPI, this), _Led(), _SelectNetworkMode(SELECT_NETWORK_MODE_NONE)
 {
 }
 
@@ -218,16 +218,13 @@ bool Wio3G::TurnOnOrReset()
 
 	if (!_AtSerial.WriteCommandAndReadResponse("ATE0", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 	_AtSerial.SetEcho(false);
-
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+IFC=2,2", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
-
-	sw.Restart();
-	while (true) {
-		if (!_AtSerial.WriteCommandAndReadResponse("AT+CPIN?", "^(OK|\\+CME ERROR: .*)$", 5000, &response)) return RET_ERR(false, E_UNKNOWN);
-		if (response == "OK") break;
-		if (sw.ElapsedMilliseconds() >= 10000) return RET_ERR(false, E_UNKNOWN);
-		delay(POLLING_INTERVAL);
-	}
+#if defined ARDUINO_WIO_3G
+	if (!_AtSerial.ReadResponse("^\\+CPIN: READY$", 10000, NULL)) return RET_ERR(false, E_UNKNOWN);
+#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+	if (!_AtSerial.WriteCommandAndReadResponse("AT+QURCCFG=\"urcport\",\"uart1\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.ReadResponse("^\\+QUSIM: 1$", 10000, NULL)) return RET_ERR(false, E_UNKNOWN);
+#endif
 
 	return true;
 }
@@ -399,6 +396,11 @@ bool Wio3G::GetTime(struct tm* tim)
 	return RET_OK(true);
 }
 
+void Wio3G::SetSelectNetwork(SelectNetworkModeType mode)
+{
+	_SelectNetworkMode = mode;
+}
+
 bool Wio3G::WaitForCSRegistration(long timeout)
 {
 	std::string response;
@@ -422,13 +424,6 @@ bool Wio3G::WaitForCSRegistration(long timeout)
 		if (sw.ElapsedMilliseconds() >= (unsigned long)timeout) return RET_ERR(false, E_UNKNOWN);
 		delay(POLLING_INTERVAL);
 	}
-
-	// for debug.
-#ifdef WIO_DEBUG
-	char str[100];
-	sprintf(str, "Elapsed time is %lu[msec.].", sw.ElapsedMilliseconds());
-	DEBUG_PRINTLN(str);
-#endif // WIO_DEBUG
 
 	return RET_OK(true);
 }
@@ -475,15 +470,8 @@ bool Wio3G::WaitForPSRegistration(long timeout)
 
 		if (sw.ElapsedMilliseconds() >= (unsigned long)timeout) return RET_ERR(false, E_UNKNOWN);
 		delay(POLLING_INTERVAL);
-}
+	}
 #endif
-
-	// for debug.
-#ifdef WIO_DEBUG
-	char str[100];
-	sprintf(str, "Elapsed time is %lu[msec.].", sw.ElapsedMilliseconds());
-	DEBUG_PRINTLN(str);
-#endif // WIO_DEBUG
 
 	return RET_OK(true);
 }
@@ -493,10 +481,38 @@ bool Wio3G::Activate(const char* accessPointName, const char* userName, const ch
 	std::string response;
 	ArgumentParser parser;
 
+	Stopwatch sw;
+	sw.Restart();
+
+	switch (_SelectNetworkMode)
+	{
+	case SelectNetworkModeType::SELECT_NETWORK_MODE_NONE:
+		break;
+	case SelectNetworkModeType::SELECT_NETWORK_MODE_AUTOMATIC:
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+COPS=0", "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
+		break;
+	case SelectNetworkModeType::SELECT_NETWORK_MODE_MANUAL_IMSI:
+	{
+		char imsi[15 + 1];
+		if (GetIMSI(imsi, sizeof(imsi)) < 0) return RET_ERR(false, E_UNKNOWN);
+		if (strlen(imsi) < 4) return RET_ERR(false, E_UNKNOWN);
+		StringBuilder str;
+		if (!str.WriteFormat("AT+COPS=1,2,\"%.5s\"", imsi)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
+		break;
+	}
+	default:
+		return RET_ERR(false, E_UNKNOWN);
+	}
+
 	if (!WaitForPSRegistration(waitForRegistTimeout)) return RET_ERR(false, E_UNKNOWN);
 
 	// for debug.
 #ifdef WIO_DEBUG
+	char dbg[100];
+	sprintf(dbg, "Elapsed time is %lu[msec.].", sw.ElapsedMilliseconds());
+	DEBUG_PRINTLN(dbg);
+
 	_AtSerial.WriteCommandAndReadResponse("AT+CREG?", "^OK$", 500, NULL);
 	_AtSerial.WriteCommandAndReadResponse("AT+CGREG?", "^OK$", 500, NULL);
 #if defined ARDUINO_WIO_LTE_M1NB1_BG96
@@ -508,7 +524,6 @@ bool Wio3G::Activate(const char* accessPointName, const char* userName, const ch
 	if (!str.WriteFormat("AT+QICSGP=1,1,\"%s\",\"%s\",\"%s\",1", accessPointName, userName, password)) return RET_ERR(false, E_UNKNOWN);
 	if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 
-	Stopwatch sw;
 	sw.Restart();
 	while (true) {
 		_AtSerial.WriteCommand("AT+QIACT=1");
@@ -778,7 +793,7 @@ bool Wio3G::HttpPost(const char* url, const char* data, int* responseCode)
 //! Send a USSD message.
 /*!
   \param in    a pointer to an input string (ASCII characters) which will be sent to SORACOM Beam/Funnel/Harvest
-	             after converted to GSM default 7 bit alphabets. allowed up to 182 characters.
+				 after converted to GSM default 7 bit alphabets. allowed up to 182 characters.
   \param out   a pointer to an output buffer to receive response message.
   \param outSize specify allocated size of `out` in bytes.
 */
