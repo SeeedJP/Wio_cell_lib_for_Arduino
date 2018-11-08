@@ -5,6 +5,7 @@
 #include "Internal/AtSerial.h"
 #include "Internal/Wio3GSK6812.h"
 #include <time.h>
+#include <string>
 
 #define WIO_TCP		(Wio3G::SOCKET_TCP)
 #define WIO_UDP		(Wio3G::SOCKET_UDP)
@@ -26,6 +27,7 @@ public:
 		SELECT_NETWORK_MODE_NONE,
 		SELECT_NETWORK_MODE_AUTOMATIC,
 		SELECT_NETWORK_MODE_MANUAL_IMSI,
+		SELECT_NETWORK_MODE_MANUAL,
 	};
 
 private:
@@ -34,6 +36,7 @@ private:
 	Wio3GSK6812 _Led;
 	ErrorCodeType _LastErrorCode;
 	SelectNetworkModeType _SelectNetworkMode;
+	std::string _SelectNetworkPLMN;
 
 private:
 	bool ReturnOk(bool value)
@@ -79,7 +82,7 @@ public:
 	int GetReceivedSignalStrength();
 	bool GetTime(struct tm* tim);
 
-	void SetSelectNetwork(SelectNetworkModeType mode);
+	void SetSelectNetwork(SelectNetworkModeType mode, const char* plmn = NULL);
 	bool WaitForCSRegistration(long timeout = 120000);
 	bool WaitForPSRegistration(long timeout = 120000);
 	bool Activate(const char* accessPointName, const char* userName, const char* password, long waitForRegistTimeout = 120000);

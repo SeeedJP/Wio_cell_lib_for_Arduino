@@ -396,9 +396,10 @@ bool Wio3G::GetTime(struct tm* tim)
 	return RET_OK(true);
 }
 
-void Wio3G::SetSelectNetwork(SelectNetworkModeType mode)
+void Wio3G::SetSelectNetwork(SelectNetworkModeType mode, const char* plmn)
 {
 	_SelectNetworkMode = mode;
+	_SelectNetworkPLMN = plmn;
 }
 
 bool Wio3G::WaitForCSRegistration(long timeout)
@@ -486,18 +487,26 @@ bool Wio3G::Activate(const char* accessPointName, const char* userName, const ch
 
 	switch (_SelectNetworkMode)
 	{
-	case SelectNetworkModeType::SELECT_NETWORK_MODE_NONE:
+	case SELECT_NETWORK_MODE_NONE:
 		break;
-	case SelectNetworkModeType::SELECT_NETWORK_MODE_AUTOMATIC:
+	case SELECT_NETWORK_MODE_AUTOMATIC:
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+COPS=0", "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
 		break;
-	case SelectNetworkModeType::SELECT_NETWORK_MODE_MANUAL_IMSI:
+	case SELECT_NETWORK_MODE_MANUAL_IMSI:
 	{
 		char imsi[15 + 1];
 		if (GetIMSI(imsi, sizeof(imsi)) < 0) return RET_ERR(false, E_UNKNOWN);
 		if (strlen(imsi) < 4) return RET_ERR(false, E_UNKNOWN);
 		StringBuilder str;
 		if (!str.WriteFormat("AT+COPS=1,2,\"%.5s\"", imsi)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
+		break;
+	}
+	case SELECT_NETWORK_MODE_MANUAL:
+	{
+		if (_SelectNetworkPLMN.size() <= 0) return RET_ERR(false, E_UNKNOWN);
+		StringBuilder str;
+		if (!str.WriteFormat("AT+COPS=1,2,\"%s\"", _SelectNetworkPLMN.c_str())) return RET_ERR(false, E_UNKNOWN);
 		if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
 		break;
 	}
