@@ -104,4 +104,7 @@ public:
 
 	bool SendUSSD(const char* in, char* out, int outSize);
 
+public:
+	static void SystemReset();
+
 };

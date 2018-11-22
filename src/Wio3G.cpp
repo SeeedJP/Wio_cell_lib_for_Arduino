@@ -8,6 +8,8 @@
 #include <string.h>
 #include <limits.h>
 
+#include <stm32f4xx_hal.h>
+
 #define RET_OK(val)					(ReturnOk(val))
 #define RET_ERR(val,err)			(ReturnError(__LINE__, val, err))
 
@@ -833,4 +835,9 @@ bool Wio3G::SendUSSD(const char* in, char* out, int outSize)
 	strcpy(out, response.c_str());
 
 	return RET_OK(true);
+}
+
+void Wio3G::SystemReset()
+{
+	HAL_NVIC_SystemReset();
 }
