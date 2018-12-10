@@ -228,7 +228,7 @@ bool Wio3G::TurnOnOrReset()
 	if (!_AtSerial.ReadResponse("^\\+QUSIM: 1$", 10000, NULL)) return RET_ERR(false, E_UNKNOWN);
 #endif
 
-	return true;
+	return RET_OK(true);
 }
 
 bool Wio3G::TurnOff()
@@ -483,57 +483,59 @@ bool Wio3G::Activate(const char* accessPointName, const char* userName, const ch
 {
 	std::string response;
 	ArgumentParser parser;
-
 	Stopwatch sw;
-	sw.Restart();
 
-	switch (_SelectNetworkMode)
-	{
-	case SELECT_NETWORK_MODE_NONE:
-		break;
-	case SELECT_NETWORK_MODE_AUTOMATIC:
-		if (!_AtSerial.WriteCommandAndReadResponse("AT+COPS=0", "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
-		break;
-	case SELECT_NETWORK_MODE_MANUAL_IMSI:
-	{
-		char imsi[15 + 1];
-		if (GetIMSI(imsi, sizeof(imsi)) < 0) return RET_ERR(false, E_UNKNOWN);
-		if (strlen(imsi) < 4) return RET_ERR(false, E_UNKNOWN);
+	if (!WaitForPSRegistration(0)) {
 		StringBuilder str;
-		if (!str.WriteFormat("AT+COPS=1,2,\"%.5s\"", imsi)) return RET_ERR(false, E_UNKNOWN);
-		if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
-		break;
-	}
-	case SELECT_NETWORK_MODE_MANUAL:
-	{
-		if (_SelectNetworkPLMN.size() <= 0) return RET_ERR(false, E_UNKNOWN);
-		StringBuilder str;
-		if (!str.WriteFormat("AT+COPS=1,2,\"%s\"", _SelectNetworkPLMN.c_str())) return RET_ERR(false, E_UNKNOWN);
-		if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
-		break;
-	}
-	default:
-		return RET_ERR(false, E_UNKNOWN);
-	}
+		if (!str.WriteFormat("AT+QICSGP=1,1,\"%s\",\"%s\",\"%s\",3", accessPointName, userName, password)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 
-	if (!WaitForPSRegistration(waitForRegistTimeout)) return RET_ERR(false, E_UNKNOWN);
+		sw.Restart();
 
-	// for debug.
+		switch (_SelectNetworkMode)
+		{
+		case SELECT_NETWORK_MODE_NONE:
+			break;
+		case SELECT_NETWORK_MODE_AUTOMATIC:
+			if (!_AtSerial.WriteCommandAndReadResponse("AT+COPS=0", "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
+			break;
+		case SELECT_NETWORK_MODE_MANUAL_IMSI:
+		{
+			char imsi[15 + 1];
+			if (GetIMSI(imsi, sizeof(imsi)) < 0) return RET_ERR(false, E_UNKNOWN);
+			if (strlen(imsi) < 4) return RET_ERR(false, E_UNKNOWN);
+			StringBuilder str;
+			if (!str.WriteFormat("AT+COPS=1,2,\"%.5s\"", imsi)) return RET_ERR(false, E_UNKNOWN);
+			if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
+			break;
+		}
+		case SELECT_NETWORK_MODE_MANUAL:
+		{
+			if (_SelectNetworkPLMN.size() <= 0) return RET_ERR(false, E_UNKNOWN);
+			StringBuilder str;
+			if (!str.WriteFormat("AT+COPS=1,2,\"%s\"", _SelectNetworkPLMN.c_str())) return RET_ERR(false, E_UNKNOWN);
+			if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", waitForRegistTimeout, NULL)) return RET_ERR(false, E_UNKNOWN);
+			break;
+		}
+		default:
+			return RET_ERR(false, E_UNKNOWN);
+		}
+
+		if (!WaitForPSRegistration(waitForRegistTimeout)) return RET_ERR(false, E_UNKNOWN);
+
+		// for debug.
 #ifdef WIO_DEBUG
-	char dbg[100];
-	sprintf(dbg, "Elapsed time is %lu[msec.].", sw.ElapsedMilliseconds());
-	DEBUG_PRINTLN(dbg);
+		char dbg[100];
+		sprintf(dbg, "Elapsed time is %lu[msec.].", sw.ElapsedMilliseconds());
+		DEBUG_PRINTLN(dbg);
 
-	_AtSerial.WriteCommandAndReadResponse("AT+CREG?", "^OK$", 500, NULL);
-	_AtSerial.WriteCommandAndReadResponse("AT+CGREG?", "^OK$", 500, NULL);
+		_AtSerial.WriteCommandAndReadResponse("AT+CREG?", "^OK$", 500, NULL);
+		_AtSerial.WriteCommandAndReadResponse("AT+CGREG?", "^OK$", 500, NULL);
 #if defined ARDUINO_WIO_LTE_M1NB1_BG96
-	_AtSerial.WriteCommandAndReadResponse("AT+CEREG?", "^OK$", 500, NULL);
+		_AtSerial.WriteCommandAndReadResponse("AT+CEREG?", "^OK$", 500, NULL);
 #endif // ARDUINO_WIO_LTE_M1NB1_BG96
 #endif // WIO_DEBUG
-
-	StringBuilder str;
-	if (!str.WriteFormat("AT+QICSGP=1,1,\"%s\",\"%s\",\"%s\",1", accessPointName, userName, password)) return RET_ERR(false, E_UNKNOWN);
-	if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+	}
 
 	sw.Restart();
 	while (true) {
@@ -556,6 +558,7 @@ bool Wio3G::Activate(const char* accessPointName, const char* userName, const ch
 bool Wio3G::Deactivate()
 {
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+QIDEACT=1", "^OK$", 40000, NULL)) return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.WriteCommandAndReadResponse("AT+COPS=2", "^OK$", 120000, NULL)) return RET_ERR(false, E_UNKNOWN);
 
 	return RET_OK(true);
 }
