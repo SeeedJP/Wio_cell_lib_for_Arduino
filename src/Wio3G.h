@@ -6,6 +6,7 @@
 #include "Internal/Wio3GSK6812.h"
 #include <time.h>
 #include <string>
+#include "WioCellularHttpHeader.h"
 
 #define WIO_TCP		(Wio3G::SOCKET_TCP)
 #define WIO_UDP		(Wio3G::SOCKET_UDP)
@@ -110,7 +111,9 @@ public:
 	bool SocketClose(int connectId);
 
 	int HttpGet(const char* url, char* data, int dataSize);
+	int HttpGet(const char* url, char* data, int dataSize, const WioCellularHttpHeader& header);
 	bool HttpPost(const char* url, const char* data, int* responseCode);
+	bool HttpPost(const char* url, const char* data, int* responseCode, const WioCellularHttpHeader& header);
 
 	bool SendUSSD(const char* in, char* out, int outSize);
 
