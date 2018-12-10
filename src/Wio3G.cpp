@@ -136,7 +136,7 @@ bool Wio3G::ReadResponseCallback(const char* response)
 	return false;
 }
 
-Wio3G::Wio3G() : _SerialAPI(&SerialModule), _AtSerial(&_SerialAPI, this), _Led(), _SelectNetworkMode(SELECT_NETWORK_MODE_NONE)
+Wio3G::Wio3G() : _SerialAPI(&SerialModule), _AtSerial(&_SerialAPI, this), _Led(), _AccessTechnology(ACCESS_TECHNOLOGY_NONE), _SelectNetworkMode(SELECT_NETWORK_MODE_NONE)
 {
 }
 
@@ -221,6 +221,27 @@ bool Wio3G::TurnOnOrReset()
 	if (!_AtSerial.WriteCommandAndReadResponse("ATE0", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 	_AtSerial.SetEcho(false);
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+IFC=2,2", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+
+#if defined ARDUINO_WIO_LTE_M1NB1_BG96
+	switch (_AccessTechnology)
+	{
+	case ACCESS_TECHNOLOGY_NONE:
+		break;
+	case ACCESS_TECHNOLOGY_LTE_M1:
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QCFG=\"nwscanseq\",02,1", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QCFG=\"nwscanmode\",3,1", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QCFG=\"iotopmode\",0,1", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		break;
+	case ACCESS_TECHNOLOGY_LTE_NB1:
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QCFG=\"nwscanseq\",03,1", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QCFG=\"nwscanmode\",3,1", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QCFG=\"iotopmode\",1,1", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		break;
+	default:
+		return RET_ERR(false, E_UNKNOWN);
+	}
+#endif // ARDUINO_WIO_LTE_M1NB1_BG96
+
 #if defined ARDUINO_WIO_3G
 	if (!_AtSerial.ReadResponse("^\\+CPIN: READY$", 10000, NULL)) return RET_ERR(false, E_UNKNOWN);
 #elif defined ARDUINO_WIO_LTE_M1NB1_BG96
@@ -397,6 +418,13 @@ bool Wio3G::GetTime(struct tm* tim)
 
 	return RET_OK(true);
 }
+
+#if defined ARDUINO_WIO_LTE_M1NB1_BG96
+void Wio3G::SetAccessTechnology(AccessTechnologyType technology)
+{
+	_AccessTechnology = technology;
+}
+#endif // ARDUINO_WIO_LTE_M1NB1_BG96
 
 void Wio3G::SetSelectNetwork(SelectNetworkModeType mode, const char* plmn)
 {

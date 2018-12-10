@@ -23,6 +23,12 @@ public:
 		SOCKET_UDP,
 	};
 
+	enum AccessTechnologyType {
+		ACCESS_TECHNOLOGY_NONE,
+		ACCESS_TECHNOLOGY_LTE_M1,
+		ACCESS_TECHNOLOGY_LTE_NB1,
+	};
+
 	enum SelectNetworkModeType {
 		SELECT_NETWORK_MODE_NONE,
 		SELECT_NETWORK_MODE_AUTOMATIC,
@@ -35,6 +41,7 @@ private:
 	AtSerial _AtSerial;
 	Wio3GSK6812 _Led;
 	ErrorCodeType _LastErrorCode;
+	AccessTechnologyType _AccessTechnology;
 	SelectNetworkModeType _SelectNetworkMode;
 	std::string _SelectNetworkPLMN;
 
@@ -82,6 +89,9 @@ public:
 	int GetReceivedSignalStrength();
 	bool GetTime(struct tm* tim);
 
+#if defined ARDUINO_WIO_LTE_M1NB1_BG96
+	void SetAccessTechnology(AccessTechnologyType technology);
+#endif // ARDUINO_WIO_LTE_M1NB1_BG96
 	void SetSelectNetwork(SelectNetworkModeType mode, const char* plmn = NULL);
 	bool WaitForCSRegistration(long timeout = 120000);
 	bool WaitForPSRegistration(long timeout = 120000);
