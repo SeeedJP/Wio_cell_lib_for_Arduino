@@ -734,7 +734,11 @@ int Wio3G::HttpGet(const char* url, char* data, int dataSize)
 	if (strncmp(url, "https:", 6) == 0) {
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"sslctxid\",1", "^OK$", 500, NULL)) return RET_ERR(-1, E_UNKNOWN);
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL)) return RET_ERR(-1, E_UNKNOWN);
+#if defined ARDUINO_WIO_3G
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(-1, E_UNKNOWN);
+#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(-1, E_UNKNOWN);
+#endif
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL)) return RET_ERR(-1, E_UNKNOWN);
 	}
 
@@ -776,7 +780,11 @@ bool Wio3G::HttpPost(const char* url, const char* data, int* responseCode)
 	if (strncmp(url, "https:", 6) == 0) {
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"sslctxid\",1", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#if defined ARDUINO_WIO_3G
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#endif
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 	}
 
