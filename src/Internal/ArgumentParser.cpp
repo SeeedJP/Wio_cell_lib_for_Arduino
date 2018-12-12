@@ -1,4 +1,4 @@
-#include "../Wio3GConfig.h"
+#include "../WioCellularConfig.h"
 #include "ArgumentParser.h"
 #include <string.h>
 

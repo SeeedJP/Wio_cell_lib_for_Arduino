@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Wio3GConfig.h"
+#include "WioCellularConfig.h"
 
 #define PINNAME_TO_PIN(port, pin) ((port - 'A') * 16 + pin)
 

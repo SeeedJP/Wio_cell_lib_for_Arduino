@@ -1,10 +1,10 @@
-#include "Wio3GConfig.h"
-#include "Wio3G.h"
+#include "WioCellularConfig.h"
+#include "WioCellular.h"
 
 #include "Internal/Debug.h"
 #include "Internal/StringBuilder.h"
 #include "Internal/ArgumentParser.h"
-#include "Wio3GHardware.h"
+#include "WioCellularHardware.h"
 #include <string.h>
 #include <limits.h>
 
@@ -48,9 +48,9 @@ static bool SplitUrl(const char* url, const char** host, int* hostLength, const 
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
-// Wio3G
+// WioCellular
 
-bool Wio3G::ReturnError(int lineNumber, bool value, Wio3G::ErrorCodeType errorCode)
+bool WioCellular::ReturnError(int lineNumber, bool value, WioCellular::ErrorCodeType errorCode)
 {
 	_LastErrorCode = errorCode;
 
@@ -62,7 +62,7 @@ bool Wio3G::ReturnError(int lineNumber, bool value, Wio3G::ErrorCodeType errorCo
 	return value;
 }
 
-int Wio3G::ReturnError(int lineNumber, int value, Wio3G::ErrorCodeType errorCode)
+int WioCellular::ReturnError(int lineNumber, int value, WioCellular::ErrorCodeType errorCode)
 {
 	_LastErrorCode = errorCode;
 
@@ -74,12 +74,12 @@ int Wio3G::ReturnError(int lineNumber, int value, Wio3G::ErrorCodeType errorCode
 	return value;
 }
 
-bool Wio3G::IsBusy() const
+bool WioCellular::IsBusy() const
 {
 	return digitalRead(MODULE_STATUS_PIN) ? false : true;
 }
 
-bool Wio3G::IsRespond()
+bool WioCellular::IsRespond()
 {
 	auto writeTimeout = SerialModule.getWriteTimeout();
 	SerialModule.setWriteTimeout(10);
@@ -98,7 +98,7 @@ bool Wio3G::IsRespond()
 	return true;
 }
 
-bool Wio3G::Reset()
+bool WioCellular::Reset()
 {
 	digitalWrite(MODULE_RESET_PIN, HIGH);
 	delay(200);
@@ -108,7 +108,7 @@ bool Wio3G::Reset()
 	return true;
 }
 
-bool Wio3G::TurnOn()
+bool WioCellular::TurnOn()
 {
 	delay(100);
 	digitalWrite(MODULE_PWRKEY_PIN, HIGH);
@@ -118,7 +118,7 @@ bool Wio3G::TurnOn()
 	return true;
 }
 
-bool Wio3G::HttpSetUrl(const char* url)
+bool WioCellular::HttpSetUrl(const char* url)
 {
 	StringBuilder str;
 	if (!str.WriteFormat("AT+QHTTPURL=%d", strlen(url))) return false;
@@ -131,21 +131,21 @@ bool Wio3G::HttpSetUrl(const char* url)
 	return true;
 }
 
-bool Wio3G::ReadResponseCallback(const char* response)
+bool WioCellular::ReadResponseCallback(const char* response)
 {
 	return false;
 }
 
-Wio3G::Wio3G() : _SerialAPI(&SerialModule), _AtSerial(&_SerialAPI, this), _Led(), _AccessTechnology(ACCESS_TECHNOLOGY_NONE), _SelectNetworkMode(SELECT_NETWORK_MODE_NONE)
+WioCellular::WioCellular() : _SerialAPI(&SerialModule), _AtSerial(&_SerialAPI, this), _Led(), _AccessTechnology(ACCESS_TECHNOLOGY_NONE), _SelectNetworkMode(SELECT_NETWORK_MODE_NONE)
 {
 }
 
-Wio3G::ErrorCodeType Wio3G::GetLastError() const
+WioCellular::ErrorCodeType WioCellular::GetLastError() const
 {
 	return _LastErrorCode;
 }
 
-void Wio3G::Init()
+void WioCellular::Init()
 {
 	////////////////////
 	// Module
@@ -176,28 +176,28 @@ void Wio3G::Init()
 	pinMode(GROVE_VCCB_PIN, OUTPUT); digitalWrite(GROVE_VCCB_PIN, LOW);
 }
 
-void Wio3G::PowerSupplyCellular(bool on)
+void WioCellular::PowerSupplyCellular(bool on)
 {
 	digitalWrite(MODULE_PWR_PIN, on ? HIGH : LOW);
 }
 
-void Wio3G::PowerSupplyLed(bool on)
+void WioCellular::PowerSupplyLed(bool on)
 {
 	digitalWrite(LED_VDD_PIN, on ? HIGH : LOW);
 }
 
-void Wio3G::PowerSupplyGrove(bool on)
+void WioCellular::PowerSupplyGrove(bool on)
 {
 	digitalWrite(GROVE_VCCB_PIN, on ? HIGH : LOW);
 }
 
-void Wio3G::LedSetRGB(uint8_t red, uint8_t green, uint8_t blue)
+void WioCellular::LedSetRGB(uint8_t red, uint8_t green, uint8_t blue)
 {
 	_Led.Reset();
 	_Led.SetSingleLED(red, green, blue);
 }
 
-bool Wio3G::TurnOnOrReset()
+bool WioCellular::TurnOnOrReset()
 {
 	std::string response;
 
@@ -252,7 +252,7 @@ bool Wio3G::TurnOnOrReset()
 	return RET_OK(true);
 }
 
-bool Wio3G::TurnOff()
+bool WioCellular::TurnOff()
 {
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+QPOWD", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 	if (!_AtSerial.ReadResponse("^POWERED DOWN$", 60000, NULL)) return RET_ERR(false, E_UNKNOWN);
@@ -260,7 +260,7 @@ bool Wio3G::TurnOff()
 	return RET_OK(true);
 }
 
-int Wio3G::GetIMEI(char* imei, int imeiSize)
+int WioCellular::GetIMEI(char* imei, int imeiSize)
 {
 	std::string response;
 	std::string imeiStr;
@@ -278,7 +278,7 @@ int Wio3G::GetIMEI(char* imei, int imeiSize)
 	return RET_OK((int)strlen(imei));
 }
 
-int Wio3G::GetIMSI(char* imsi, int imsiSize)
+int WioCellular::GetIMSI(char* imsi, int imsiSize)
 {
 	std::string response;
 	std::string imsiStr;
@@ -296,7 +296,7 @@ int Wio3G::GetIMSI(char* imsi, int imsiSize)
 	return RET_OK((int)strlen(imsi));
 }
 
-int Wio3G::GetICCID(char* iccid, int iccidSize)
+int WioCellular::GetICCID(char* iccid, int iccidSize)
 {
 	std::string response;
 
@@ -311,7 +311,7 @@ int Wio3G::GetICCID(char* iccid, int iccidSize)
 	return RET_OK((int)strlen(iccid));
 }
 
-int Wio3G::GetPhoneNumber(char* number, int numberSize)
+int WioCellular::GetPhoneNumber(char* number, int numberSize)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -335,7 +335,7 @@ int Wio3G::GetPhoneNumber(char* number, int numberSize)
 	return RET_OK((int)strlen(number));
 }
 
-int Wio3G::GetReceivedSignalStrength()
+int WioCellular::GetReceivedSignalStrength()
 {
 	std::string response;
 	ArgumentParser parser;
@@ -358,7 +358,7 @@ int Wio3G::GetReceivedSignalStrength()
 	return RET_OK(-999);
 }
 
-bool Wio3G::GetTime(struct tm* tim)
+bool WioCellular::GetTime(struct tm* tim)
 {
 	std::string response;
 
@@ -420,19 +420,19 @@ bool Wio3G::GetTime(struct tm* tim)
 }
 
 #if defined ARDUINO_WIO_LTE_M1NB1_BG96
-void Wio3G::SetAccessTechnology(AccessTechnologyType technology)
+void WioCellular::SetAccessTechnology(AccessTechnologyType technology)
 {
 	_AccessTechnology = technology;
 }
 #endif // ARDUINO_WIO_LTE_M1NB1_BG96
 
-void Wio3G::SetSelectNetwork(SelectNetworkModeType mode, const char* plmn)
+void WioCellular::SetSelectNetwork(SelectNetworkModeType mode, const char* plmn)
 {
 	_SelectNetworkMode = mode;
 	_SelectNetworkPLMN = plmn;
 }
 
-bool Wio3G::WaitForCSRegistration(long timeout)
+bool WioCellular::WaitForCSRegistration(long timeout)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -459,7 +459,7 @@ bool Wio3G::WaitForCSRegistration(long timeout)
 	return RET_OK(true);
 }
 
-bool Wio3G::WaitForPSRegistration(long timeout)
+bool WioCellular::WaitForPSRegistration(long timeout)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -507,7 +507,7 @@ bool Wio3G::WaitForPSRegistration(long timeout)
 	return RET_OK(true);
 }
 
-bool Wio3G::Activate(const char* accessPointName, const char* userName, const char* password, long waitForRegistTimeout)
+bool WioCellular::Activate(const char* accessPointName, const char* userName, const char* password, long waitForRegistTimeout)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -583,7 +583,7 @@ bool Wio3G::Activate(const char* accessPointName, const char* userName, const ch
 	return RET_OK(true);
 }
 
-bool Wio3G::Deactivate()
+bool WioCellular::Deactivate()
 {
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+QIDEACT=1", "^OK$", 40000, NULL)) return RET_ERR(false, E_UNKNOWN);
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+COPS=2", "^OK$", 120000, NULL)) return RET_ERR(false, E_UNKNOWN);
@@ -591,7 +591,7 @@ bool Wio3G::Deactivate()
 	return RET_OK(true);
 }
 
-int Wio3G::SocketOpen(const char* host, int port, SocketType type)
+int WioCellular::SocketOpen(const char* host, int port, SocketType type)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -643,7 +643,7 @@ int Wio3G::SocketOpen(const char* host, int port, SocketType type)
 	return RET_OK(connectId);
 }
 
-bool Wio3G::SocketSend(int connectId, const byte* data, int dataSize)
+bool WioCellular::SocketSend(int connectId, const byte* data, int dataSize)
 {
 	if (connectId >= CONNECT_ID_NUM) return RET_ERR(false, E_UNKNOWN);
 	if (dataSize > 1460) return RET_ERR(false, E_UNKNOWN);
@@ -658,12 +658,12 @@ bool Wio3G::SocketSend(int connectId, const byte* data, int dataSize)
 	return RET_OK(true);
 }
 
-bool Wio3G::SocketSend(int connectId, const char* data)
+bool WioCellular::SocketSend(int connectId, const char* data)
 {
 	return SocketSend(connectId, (const byte*)data, strlen(data));
 }
 
-int Wio3G::SocketReceive(int connectId, byte* data, int dataSize)
+int WioCellular::SocketReceive(int connectId, byte* data, int dataSize)
 {
 	std::string response;
 
@@ -683,7 +683,7 @@ int Wio3G::SocketReceive(int connectId, byte* data, int dataSize)
 	return RET_OK(dataLength);
 }
 
-int Wio3G::SocketReceive(int connectId, char* data, int dataSize)
+int WioCellular::SocketReceive(int connectId, char* data, int dataSize)
 {
 	int dataLength = SocketReceive(connectId, (byte*)data, dataSize - 1);
 	if (dataLength >= 0) data[dataLength] = '\0';
@@ -691,7 +691,7 @@ int Wio3G::SocketReceive(int connectId, char* data, int dataSize)
 	return dataLength;
 }
 
-int Wio3G::SocketReceive(int connectId, byte* data, int dataSize, long timeout)
+int WioCellular::SocketReceive(int connectId, byte* data, int dataSize, long timeout)
 {
 	Stopwatch sw;
 	sw.Restart();
@@ -703,7 +703,7 @@ int Wio3G::SocketReceive(int connectId, byte* data, int dataSize, long timeout)
 	return dataLength;
 }
 
-int Wio3G::SocketReceive(int connectId, char* data, int dataSize, long timeout)
+int WioCellular::SocketReceive(int connectId, char* data, int dataSize, long timeout)
 {
 	Stopwatch sw;
 	sw.Restart();
@@ -715,7 +715,7 @@ int Wio3G::SocketReceive(int connectId, char* data, int dataSize, long timeout)
 	return dataLength;
 }
 
-bool Wio3G::SocketClose(int connectId)
+bool WioCellular::SocketClose(int connectId)
 {
 	if (connectId >= CONNECT_ID_NUM) return RET_ERR(false, E_UNKNOWN);
 
@@ -726,7 +726,7 @@ bool Wio3G::SocketClose(int connectId)
 	return RET_OK(true);
 }
 
-int Wio3G::HttpGet(const char* url, char* data, int dataSize)
+int WioCellular::HttpGet(const char* url, char* data, int dataSize)
 {
 	WioCellularHttpHeader header;
 	header["Accept"] = "*/*";
@@ -736,7 +736,7 @@ int Wio3G::HttpGet(const char* url, char* data, int dataSize)
 	return HttpGet(url, data, dataSize, header);
 }
 
-int Wio3G::HttpGet(const char* url, char* data, int dataSize, const WioCellularHttpHeader& header)
+int WioCellular::HttpGet(const char* url, char* data, int dataSize, const WioCellularHttpHeader& header)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -817,7 +817,7 @@ int Wio3G::HttpGet(const char* url, char* data, int dataSize, const WioCellularH
 	return RET_OK(contentLength);
 }
 
-bool Wio3G::HttpPost(const char* url, const char* data, int* responseCode)
+bool WioCellular::HttpPost(const char* url, const char* data, int* responseCode)
 {
 	WioCellularHttpHeader header;
 	header["Accept"] = "*/*";
@@ -828,7 +828,7 @@ bool Wio3G::HttpPost(const char* url, const char* data, int* responseCode)
 	return HttpPost(url, data, responseCode, header);
 }
 
-bool Wio3G::HttpPost(const char* url, const char* data, int* responseCode, const WioCellularHttpHeader& header)
+bool WioCellular::HttpPost(const char* url, const char* data, int* responseCode, const WioCellularHttpHeader& header)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -907,7 +907,7 @@ bool Wio3G::HttpPost(const char* url, const char* data, int* responseCode, const
   \param out   a pointer to an output buffer to receive response message.
   \param outSize specify allocated size of `out` in bytes.
 */
-bool Wio3G::SendUSSD(const char* in, char* out, int outSize)
+bool WioCellular::SendUSSD(const char* in, char* out, int outSize)
 {
 	if (in == NULL || out == NULL) {
 		return RET_ERR(false, E_UNKNOWN);
@@ -936,7 +936,7 @@ bool Wio3G::SendUSSD(const char* in, char* out, int outSize)
 	return RET_OK(true);
 }
 
-void Wio3G::SystemReset()
+void WioCellular::SystemReset()
 {
 	HAL_NVIC_SystemReset();
 }

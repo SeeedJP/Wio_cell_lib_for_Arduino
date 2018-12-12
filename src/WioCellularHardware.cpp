@@ -1,5 +1,5 @@
-#include "Wio3GConfig.h"
-#include "Wio3GHardware.h"
+#include "WioCellularConfig.h"
+#include "WioCellularHardware.h"
 
 HardwareSerial SerialUSB(DEBUG_UART_CORE, DEBUG_UART_TX_PIN, DEBUG_UART_RX_PIN);
 HardwareSerial SerialModule(MODULE_UART_CORE, MODULE_UART_TX_PIN, MODULE_UART_RX_PIN, MODULE_CTS_PIN, MODULE_RTS_PIN);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Wio3GConfig.h"
+#include "WioCellularConfig.h"
 
 #include <map>
 

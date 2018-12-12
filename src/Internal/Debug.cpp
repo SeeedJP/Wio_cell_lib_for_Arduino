@@ -1,7 +1,7 @@
-#include "../Wio3GConfig.h"
+#include "../WioCellularConfig.h"
 #include "Debug.h"
 
-#include "../Wio3GHardware.h"
+#include "../WioCellularHardware.h"
 
 #ifdef WIO_DEBUG
 

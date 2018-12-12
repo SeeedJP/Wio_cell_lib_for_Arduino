@@ -1,9 +1,9 @@
-#include "../Wio3GConfig.h"
+#include "../WioCellularConfig.h"
 #include "AtSerial.h"
 
 #include "Debug.h"
 #include "slre.901d42c/slre.h"
-#include "../Wio3G.h"
+#include "../WioCellular.h"
 #include <string.h>
 
 #define READ_BYTE_TIMEOUT	(10)
@@ -12,7 +12,7 @@
 #define CHAR_CR (0x0d)
 #define CHAR_LF (0x0a)
 
-AtSerial::AtSerial(SerialAPI* serial, Wio3G* wio3G) : _Serial(serial), _Wio3G(wio3G), _EchoOn(true)
+AtSerial::AtSerial(SerialAPI* serial, WioCellular* wio) : _Serial(serial), _Wio(wio), _EchoOn(true)
 {
 }
 
@@ -120,7 +120,7 @@ bool AtSerial::ReadResponse(const char* pattern, unsigned long timeout, std::str
 		std::string response;
 		if (!ReadResponseInternal(internalPattern, _EchoOn ? timeout : READ_BYTE_TIMEOUT, &response, RESPONSE_MAX_LENGTH)) return false;
 
-		if (_Wio3G->ReadResponseCallback(response.c_str())) {
+		if (_Wio->ReadResponseCallback(response.c_str())) {
 			continue;
 		}
 

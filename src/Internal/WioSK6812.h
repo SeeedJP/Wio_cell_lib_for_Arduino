@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../Wio3GConfig.h"
+#include "../WioCellularConfig.h"
 
-class Wio3GSK6812
+class WioSK6812
 {
 private:
 	void SetBit(bool on);

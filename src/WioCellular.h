@@ -1,17 +1,17 @@
 #pragma once
 
-#include "Wio3GConfig.h"
+#include "WioCellularConfig.h"
 
 #include "Internal/AtSerial.h"
-#include "Internal/Wio3GSK6812.h"
+#include "Internal/WioSK6812.h"
 #include <time.h>
 #include <string>
 #include "WioCellularHttpHeader.h"
 
-#define WIO_TCP		(Wio3G::SOCKET_TCP)
-#define WIO_UDP		(Wio3G::SOCKET_UDP)
+#define WIO_TCP		(WioCellular::SOCKET_TCP)
+#define WIO_UDP		(WioCellular::SOCKET_UDP)
 
-class Wio3G
+class WioCellular
 {
 public:
 	enum ErrorCodeType {
@@ -40,7 +40,7 @@ public:
 private:
 	SerialAPI _SerialAPI;
 	AtSerial _AtSerial;
-	Wio3GSK6812 _Led;
+	WioSK6812 _Led;
 	ErrorCodeType _LastErrorCode;
 	AccessTechnologyType _AccessTechnology;
 	SelectNetworkModeType _SelectNetworkMode;
@@ -71,7 +71,7 @@ public:
 	bool ReadResponseCallback(const char* response);	// Internal use only.
 
 public:
-	Wio3G();
+	WioCellular();
 	ErrorCodeType GetLastError() const;
 	void Init();
 	void PowerSupplyCellular(bool on);

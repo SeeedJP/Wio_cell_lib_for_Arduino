@@ -1,5 +1,5 @@
-#include "../Wio3GConfig.h"
-#include "Wio3GSK6812.h"
+#include "../WioCellularConfig.h"
+#include "WioSK6812.h"
 
 #include <stm32f4xx_hal.h>
 
@@ -25,7 +25,7 @@ asm volatile (
 	"bx lr                       @@ 3 cycles\n\t"
 	);
 
-void Wio3GSK6812::SetBit(bool on)
+void WioSK6812::SetBit(bool on)
 {
 	if (!on) {
 		LED_GPIO_HIGH();
@@ -41,20 +41,20 @@ void Wio3GSK6812::SetBit(bool on)
 	}
 }
 
-void Wio3GSK6812::SetByte(uint8_t val)
+void WioSK6812::SetByte(uint8_t val)
 {
 	for (int i = 0; i < 8; i++) {
 		SetBit(val & (1 << (7 - i)));
 	}
 }
 
-void Wio3GSK6812::Reset()
+void WioSK6812::Reset()
 {
 	LED_GPIO_LOW();
 	DelayLoop(13333);
 }
 
-void Wio3GSK6812::SetSingleLED(uint8_t r, uint8_t g, uint8_t b)
+void WioSK6812::SetSingleLED(uint8_t r, uint8_t g, uint8_t b)
 {
 	SetByte(g);
 	SetByte(r);

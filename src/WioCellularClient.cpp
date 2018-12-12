@@ -1,5 +1,5 @@
-#include "Wio3GConfig.h"
-#include "Wio3GClient.h"
+#include "WioCellularConfig.h"
+#include "WioCellularClient.h"
 
 #define RECEIVE_MAX_LENGTH	(1500)
 
@@ -9,19 +9,19 @@
 #define CONNECT_TRUNCATED			(-3)
 #define CONNECT_INVALID_RESPONSE	(-4)
 
-Wio3GClient::Wio3GClient(Wio3G* wio)
+WioCellularClient::WioCellularClient(WioCellular* wio)
 {
 	_Wio = wio;
 	_ConnectId = -1;
 	_ReceiveBuffer = new byte[RECEIVE_MAX_LENGTH];
 }
 
-Wio3GClient::~Wio3GClient()
+WioCellularClient::~WioCellularClient()
 {
 	delete [] _ReceiveBuffer;
 }
 
-int Wio3GClient::connect(IPAddress ip, uint16_t port)
+int WioCellularClient::connect(IPAddress ip, uint16_t port)
 {
 	if (connected()) return CONNECT_INVALID_RESPONSE;	// Already connected.
 
@@ -32,25 +32,25 @@ int Wio3GClient::connect(IPAddress ip, uint16_t port)
 	ipStr += String(ip[2]);
 	ipStr += ".";
 	ipStr += String(ip[3]);
-	int connectId = _Wio->SocketOpen(ipStr.c_str(), port, Wio3G::SOCKET_TCP);
+	int connectId = _Wio->SocketOpen(ipStr.c_str(), port, WioCellular::SOCKET_TCP);
 	if (connectId < 0) return CONNECT_INVALID_SERVER;
 	_ConnectId = connectId;
 
 	return CONNECT_SUCCESS;
 }
 
-int Wio3GClient::connect(const char* host, uint16_t port)
+int WioCellularClient::connect(const char* host, uint16_t port)
 {
 	if (connected()) return CONNECT_INVALID_RESPONSE;	// Already connected.
 
-	int connectId = _Wio->SocketOpen(host, port, Wio3G::SOCKET_TCP);
+	int connectId = _Wio->SocketOpen(host, port, WioCellular::SOCKET_TCP);
 	if (connectId < 0) return CONNECT_INVALID_SERVER;
 	_ConnectId = connectId;
 
 	return CONNECT_SUCCESS;
 }
 
-size_t Wio3GClient::write(uint8_t data)
+size_t WioCellularClient::write(uint8_t data)
 {
 	if (!connected()) return 0;
 
@@ -59,7 +59,7 @@ size_t Wio3GClient::write(uint8_t data)
 	return 1;
 }
 
-size_t Wio3GClient::write(const uint8_t* buf, size_t size)
+size_t WioCellularClient::write(const uint8_t* buf, size_t size)
 {
 	if (!connected()) return 0;
 
@@ -68,7 +68,7 @@ size_t Wio3GClient::write(const uint8_t* buf, size_t size)
 	return size;
 }
 
-int Wio3GClient::available()
+int WioCellularClient::available()
 {
 	if (!connected()) return 0;
 
@@ -78,7 +78,7 @@ int Wio3GClient::available()
 	return _ReceiveQueue.size();
 }
 
-int Wio3GClient::read()
+int WioCellularClient::read()
 {
 	if (!connected()) return -1;
 
@@ -91,7 +91,7 @@ int Wio3GClient::read()
 	return data;
 }
 
-int Wio3GClient::read(uint8_t* buf, size_t size)
+int WioCellularClient::read(uint8_t* buf, size_t size)
 {
 	if (!connected()) return 0;
 
@@ -107,7 +107,7 @@ int Wio3GClient::read(uint8_t* buf, size_t size)
 	return popSize;
 }
 
-int Wio3GClient::peek()
+int WioCellularClient::peek()
 {
 	if (!connected()) return 0;
 
@@ -117,12 +117,12 @@ int Wio3GClient::peek()
 	return _ReceiveQueue.front();
 }
 
-void Wio3GClient::flush()
+void WioCellularClient::flush()
 {
 	// Nothing to do.
 }
 
-void Wio3GClient::stop()
+void WioCellularClient::stop()
 {
 	if (!connected()) return;
 
@@ -131,12 +131,12 @@ void Wio3GClient::stop()
 	while (!_ReceiveQueue.empty()) _ReceiveQueue.pop();
 }
 
-uint8_t Wio3GClient::connected()
+uint8_t WioCellularClient::connected()
 {
 	return _ConnectId >= 0 ? true : false;
 }
 
-Wio3GClient::operator bool()
+WioCellularClient::operator bool()
 {
 	return _ConnectId >= 0 ? true : false;
 }

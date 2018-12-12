@@ -1,4 +1,4 @@
-#include "../Wio3GConfig.h"
+#include "../WioCellularConfig.h"
 #include "StringBuilder.h"
 
 #include <stdio.h>

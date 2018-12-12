@@ -4,19 +4,19 @@
 #include "Stopwatch.h"
 #include <string>
 
-class Wio3G;
+class WioCellular;
 
 class AtSerial
 {
 private:
 	SerialAPI* _Serial;
-	Wio3G* _Wio3G;
+	WioCellular* _Wio;
 	unsigned long _EchoOn;
 
 	bool ReadResponseInternal(const char* pattern, unsigned long timeout, std::string* response, int responseMaxLength);
 
 public:
-	AtSerial(SerialAPI* serial, Wio3G* wio3G);
+	AtSerial(SerialAPI* serial, WioCellular* wio);
 
 	void SetEcho(bool on);
 
