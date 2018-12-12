@@ -44,8 +44,8 @@
 #define GROVE_UART_TX_PIN   WIO_UART_D22			// out
 #define GROVE_UART_RX_PIN   WIO_UART_D23			// in
 #define GROVE_I2C_CORE		(0)   // I2C1
-#define GROVE_I2C_SCL_PIN	WIO_I2C_D25				// out
-#define GROVE_I2C_SDA_PIN	WIO_I2C_D24				// in/out
+#define GROVE_I2C_SCL_PIN	WIO_I2C_D24				// out
+#define GROVE_I2C_SDA_PIN	WIO_I2C_D25				// in/out
 
 extern HardwareSerial SerialUSB;
 extern HardwareSerial SerialModule;
