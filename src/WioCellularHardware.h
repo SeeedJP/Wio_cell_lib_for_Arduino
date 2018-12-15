@@ -47,7 +47,18 @@
 #define GROVE_I2C_SCL_PIN	WIO_I2C_D24				// out
 #define GROVE_I2C_SDA_PIN	WIO_I2C_D25				// in/out
 
+#ifdef ARDUINO_ARCH_STM32
+
+extern HardwareSerial SerialUSB;
+extern HardwareSerial SerialModule;
+extern HardwareSerial& SerialUART;
+extern TwoWire& WireI2C;
+
+#else
+
 extern HardwareSerial SerialUSB;
 extern HardwareSerial SerialModule;
 extern HardwareSerial SerialUART;
 extern TwoWire WireI2C;
+
+#endif // ARDUINO_ARCH_STM32

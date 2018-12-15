@@ -81,20 +81,26 @@ bool WioCellular::IsBusy() const
 
 bool WioCellular::IsRespond()
 {
+#ifndef ARDUINO_ARCH_STM32
 	auto writeTimeout = SerialModule.getWriteTimeout();
 	SerialModule.setWriteTimeout(10);
+#endif // ARDUINO_ARCH_STM32
 
 	Stopwatch sw;
 	sw.Restart();
 	while (!_AtSerial.WriteCommandAndReadResponse("AT", "^OK$", 500, NULL)) {
 		if (sw.ElapsedMilliseconds() >= 2000)
 		{
+#ifndef ARDUINO_ARCH_STM32
 			SerialModule.setWriteTimeout(writeTimeout);
+#endif // ARDUINO_ARCH_STM32
 			return false;
 		}
 	}
 
+#ifndef ARDUINO_ARCH_STM32
 	SerialModule.setWriteTimeout(writeTimeout);
+#endif // ARDUINO_ARCH_STM32
 	return true;
 }
 
@@ -160,8 +166,10 @@ void WioCellular::Init()
 	// Main UART Interface
 	pinMode(MODULE_DTR_PIN, OUTPUT); digitalWrite(MODULE_DTR_PIN, LOW);
 
+#ifndef ARDUINO_ARCH_STM32
 	SerialModule.setReadBufferSize(100);
 	SerialModule.setWriteTimeout(0xffffffff);	// HAL_MAX_DELAY
+#endif // ARDUINO_ARCH_STM32
 	SerialModule.begin(115200);
 
 	////////////////////
@@ -221,7 +229,9 @@ bool WioCellular::TurnOnOrReset()
 
 	if (!_AtSerial.WriteCommandAndReadResponse("ATE0", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 	_AtSerial.SetEcho(false);
+#ifndef ARDUINO_ARCH_STM32
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+IFC=2,2", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#endif // ARDUINO_ARCH_STM32
 
 #if defined ARDUINO_WIO_LTE_M1NB1_BG96
 	switch (_AccessTechnology)
