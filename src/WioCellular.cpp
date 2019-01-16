@@ -274,7 +274,7 @@ bool WioCellular::TurnOnOrReset()
 		//resultCode = atoi(parser[0]);
 		status = atoi(parser[1]);
 		if (!_AtSerial.ReadResponse("^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
-		if (0 <= status && status <= 5) break;
+		if (0 <= status && status <= 5 && status != 4) break;
 
 		if (sw.ElapsedMilliseconds() >= 10000) return RET_ERR(false, E_UNKNOWN);
 		delay(POLLING_INTERVAL);
