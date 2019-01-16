@@ -244,7 +244,24 @@ bool WioCellular::TurnOnOrReset()
 #endif // ARDUINO_WIO_LTE_M1NB1_BG96
 
 #if defined ARDUINO_WIO_3G
-	if (!_AtSerial.ReadResponse("^\\+CPIN: READY$", 10000, NULL)) return RET_ERR(false, E_UNKNOWN);
+	sw.Restart();
+	bool cpinReady;
+	while (true) {
+		_AtSerial.WriteCommand("AT+CPIN?");
+		cpinReady = false;
+		while (true) {
+			if (!_AtSerial.ReadResponse("^(OK|\\+CPIN: READY|\\+CME ERROR: .*)$", 500, &response)) return RET_ERR(false, E_UNKNOWN);
+			if (response == "+CPIN: READY") {
+				cpinReady = true;
+				continue;
+			}
+			break;
+		}
+		if (response == "OK" && cpinReady) break;
+
+		if (sw.ElapsedMilliseconds() >= 10000) return RET_ERR(false, E_UNKNOWN);
+		delay(POLLING_INTERVAL);
+	}
 #elif defined ARDUINO_WIO_LTE_M1NB1_BG96
 	sw.Restart();
 	while (true) {
@@ -259,7 +276,7 @@ bool WioCellular::TurnOnOrReset()
 		if (!_AtSerial.ReadResponse("^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 		if (0 <= status && status <= 5) break;
 
-		if (sw.ElapsedMilliseconds() >= (unsigned long)10000) return RET_ERR(false, E_UNKNOWN);
+		if (sw.ElapsedMilliseconds() >= 10000) return RET_ERR(false, E_UNKNOWN);
 		delay(POLLING_INTERVAL);
 	}
 #endif
