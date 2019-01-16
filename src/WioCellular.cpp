@@ -200,6 +200,7 @@ void WioCellular::LedSetRGB(uint8_t red, uint8_t green, uint8_t blue)
 bool WioCellular::TurnOnOrReset()
 {
 	std::string response;
+	ArgumentParser parser;
 
 	if (IsRespond()) {
 		DEBUG_PRINTLN("Reset()");
@@ -245,8 +246,22 @@ bool WioCellular::TurnOnOrReset()
 #if defined ARDUINO_WIO_3G
 	if (!_AtSerial.ReadResponse("^\\+CPIN: READY$", 10000, NULL)) return RET_ERR(false, E_UNKNOWN);
 #elif defined ARDUINO_WIO_LTE_M1NB1_BG96
-	if (!_AtSerial.WriteCommandAndReadResponse("AT+QURCCFG=\"urcport\",\"uart1\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
-	if (!_AtSerial.ReadResponse("^\\+QUSIM: 1$", 10000, NULL)) return RET_ERR(false, E_UNKNOWN);
+	sw.Restart();
+	while (true) {
+		int status;
+
+		_AtSerial.WriteCommand("AT+CEREG?");
+		if (!_AtSerial.ReadResponse("^\\+CEREG: (.*)$", 500, &response)) return RET_ERR(false, E_UNKNOWN);
+		parser.Parse(response.c_str());
+		if (parser.Size() < 2) return RET_ERR(false, E_UNKNOWN);
+		//resultCode = atoi(parser[0]);
+		status = atoi(parser[1]);
+		if (!_AtSerial.ReadResponse("^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (0 <= status && status <= 5) break;
+
+		if (sw.ElapsedMilliseconds() >= (unsigned long)10000) return RET_ERR(false, E_UNKNOWN);
+		delay(POLLING_INTERVAL);
+	}
 #endif
 
 	return RET_OK(true);
