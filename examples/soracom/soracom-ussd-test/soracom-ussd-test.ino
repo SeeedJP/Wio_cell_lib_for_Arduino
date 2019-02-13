@@ -29,8 +29,8 @@ void setup() {
   }
 
   SerialUSB.println("### Sending USSD.");
-
-  const char* message = "*901011*123#";  // Beam
+  const char* message = "*901001*123# ";  // Unified Endpoint
+  //const char* message = "*901011*123#";  // Beam
   //const char* message = "*901021*123# ";  // Funnel
   //const char* message = "*901031*123#";  // Harvest
   char response[256];
