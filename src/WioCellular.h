@@ -77,6 +77,7 @@ public:
 	void PowerSupplyCellular(bool on);
 	void PowerSupplyLed(bool on);
 	void PowerSupplyGrove(bool on);
+	void PowerSupplySD(bool on);
 	void LedSetRGB(uint8_t red, uint8_t green, uint8_t blue);
 	bool TurnOnOrReset();
 	bool TurnOff();

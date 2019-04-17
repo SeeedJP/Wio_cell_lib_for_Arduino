@@ -182,6 +182,11 @@ void WioCellular::Init()
 	// Grove
 
 	pinMode(GROVE_VCCB_PIN, OUTPUT); digitalWrite(GROVE_VCCB_PIN, LOW);
+
+	////////////////////
+	// SD
+
+	pinMode(SD_POWR_PIN, OUTPUT); digitalWrite(SD_POWR_PIN, LOW);
 }
 
 void WioCellular::PowerSupplyCellular(bool on)
@@ -197,6 +202,11 @@ void WioCellular::PowerSupplyLed(bool on)
 void WioCellular::PowerSupplyGrove(bool on)
 {
 	digitalWrite(GROVE_VCCB_PIN, on ? HIGH : LOW);
+}
+
+void WioCellular::PowerSupplySD(bool on)
+{
+	digitalWrite(SD_POWR_PIN, on ? HIGH : LOW);
 }
 
 void WioCellular::LedSetRGB(uint8_t red, uint8_t green, uint8_t blue)

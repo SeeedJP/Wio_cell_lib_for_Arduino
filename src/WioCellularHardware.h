@@ -47,6 +47,8 @@
 #define GROVE_I2C_SCL_PIN	WIO_I2C_D24				// out
 #define GROVE_I2C_SDA_PIN	WIO_I2C_D25				// in/out
 
+#define SD_POWR_PIN			PINNAME_TO_PIN('A', 15)	// out
+
 #ifdef ARDUINO_ARCH_STM32
 
 extern HardwareSerial SerialUSB;
