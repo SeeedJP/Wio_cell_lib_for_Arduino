@@ -137,10 +137,10 @@ bool WioCellular::HttpSetUrl(const char* url)
 	return true;
 }
 
-bool WioCellular::ReadResponseCallback(const char* response)
-{
-	return false;
-}
+//bool WioCellular::ReadResponseCallback(const char* response)
+//{
+//	return false;
+//}
 
 WioCellular::WioCellular() : _SerialAPI(&SerialModule), _AtSerial(&_SerialAPI, this), _Led(), _AccessTechnology(ACCESS_TECHNOLOGY_NONE), _SelectNetworkMode(SELECT_NETWORK_MODE_NONE)
 {

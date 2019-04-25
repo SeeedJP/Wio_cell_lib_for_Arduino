@@ -68,7 +68,7 @@ private:
 	bool HttpSetUrl(const char* url);
 
 public:
-	bool ReadResponseCallback(const char* response);	// Internal use only.
+	//bool ReadResponseCallback(const char* response);	// Internal use only.
 
 public:
 	WioCellular();

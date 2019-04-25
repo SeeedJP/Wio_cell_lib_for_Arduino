@@ -24,7 +24,7 @@ void AtSerial::SetEcho(bool on)
 bool AtSerial::WaitForAvailable(Stopwatch* sw, unsigned long timeout) const
 {
 	while (!_Serial->Available()) {
-		if (timeout >= 0 && sw != NULL && sw->ElapsedMilliseconds() >= timeout) {
+		if (sw != NULL && sw->ElapsedMilliseconds() >= timeout) {
 			DEBUG_PRINTLN("### TIMEOUT ###");
 			return false;
 		}
@@ -120,9 +120,9 @@ bool AtSerial::ReadResponse(const char* pattern, unsigned long timeout, std::str
 		std::string response;
 		if (!ReadResponseInternal(internalPattern, _EchoOn ? timeout : READ_BYTE_TIMEOUT, &response, RESPONSE_MAX_LENGTH)) return false;
 
-		if (_Wio->ReadResponseCallback(response.c_str())) {
-			continue;
-		}
+		//if (_Wio->ReadResponseCallback(response.c_str())) {
+		//	continue;
+		//}
 
 		slre_cap cap;
 		cap.len = 0;
