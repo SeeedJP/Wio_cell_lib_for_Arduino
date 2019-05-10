@@ -643,6 +643,51 @@ bool WioCellular::Deactivate()
 	return RET_OK(true);
 }
 
+bool WioCellular::GetDNSAddress(IPAddress* ip1, IPAddress* ip2)
+{
+	std::string response;
+	std::string ipsStr;
+	ArgumentParser parser;
+
+	_AtSerial.WriteCommand("AT+QIDNSCFG=1");
+	while (true) {
+		if (!_AtSerial.ReadResponse("^(OK|\\+QIDNSCFG: 1,.*)$", 500, &response)) return RET_ERR(false, E_UNKNOWN);
+		if (response == "OK") break;
+		ipsStr = response;
+	}
+
+	parser.Parse(&ipsStr.c_str()[13]);
+
+	if (parser.Size() >= 1) {
+		if (!ip1->fromString(parser[0])) return RET_ERR(false, E_UNKNOWN);
+	}
+	else {
+		*ip1 = INADDR_NONE;
+	}
+	if (parser.Size() >= 2) {
+		if (!ip2->fromString(parser[1])) return RET_ERR(false, E_UNKNOWN);
+	}
+	else {
+		*ip2 = INADDR_NONE;
+	}
+
+	return RET_OK(true);
+}
+
+bool WioCellular::SetDNSAddress(const IPAddress& ip1)
+{
+	return SetDNSAddress(ip1, INADDR_NONE);
+}
+
+bool WioCellular::SetDNSAddress(const IPAddress& ip1, const IPAddress& ip2)
+{
+	StringBuilder str;
+	if (!str.WriteFormat("AT+QIDNSCFG=1,\"%u.%u.%u.%u\",\"%u.%u.%u.%u\"", ip1[0], ip1[1], ip1[2], ip1[3], ip2[0], ip2[1], ip2[2], ip2[3])) return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.WriteCommandAndReadResponse(str.GetString(), "^OK$", 150000, NULL)) return RET_ERR(false, E_UNKNOWN);
+
+	return RET_OK(true);
+}
+
 int WioCellular::SocketOpen(const char* host, int port, SocketType type)
 {
 	std::string response;

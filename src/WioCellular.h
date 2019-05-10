@@ -2,6 +2,7 @@
 
 #include "WioCellularConfig.h"
 
+#include <IPAddress.h>
 #include "Internal/AtSerial.h"
 #include "Internal/WioSK6812.h"
 #include <time.h>
@@ -101,6 +102,10 @@ public:
 	bool Deactivate();
 
 	//bool GetLocation(double* longitude, double* latitude);
+
+	bool GetDNSAddress(IPAddress* ip1, IPAddress* ip2);
+	bool SetDNSAddress(const IPAddress& ip1);
+	bool SetDNSAddress(const IPAddress& ip1, const IPAddress& ip2);
 
 	int SocketOpen(const char* host, int port, SocketType type);
 	bool SocketSend(int connectId, const byte* data, int dataSize);

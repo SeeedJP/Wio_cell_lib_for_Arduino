@@ -3,7 +3,7 @@
 #include "WioCellularConfig.h"
 
 #include "WioCellular.h"
-#include "Client.h"
+#include <Client.h>
 #include <queue>
 
 class WioCellularClient : public Client {
