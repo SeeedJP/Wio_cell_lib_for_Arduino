@@ -1,13 +1,11 @@
-#include <NectisCellular.h>
+#include "NectisCellular.h"
 
-#define WEBURL       "https://httpbin.org/ip"
+constexpr char URL[] = "https://httpbin.org/ip";
 
 NectisCellular Nectis;
 
-void setup() {
-  char data[1024];
-  int status;
 
+void setup() {
   Serial.begin(115200);
   delay(4000);
   Serial.println("");
@@ -25,10 +23,14 @@ void setup() {
 
   Serial.println("### Setup completed.");
 
-  Serial.println("GET " WEBURL);
-  status = Nectis.HttpGet(WEBURL, data, sizeof(data));
+
+  char data[512];
+  int status;
+
+  Serial.printf("GET %s\n", URL);
+  status = Nectis.HttpGet(URL, data, sizeof(data));
   
-  Serial.print("RecvBytes:");
+  Serial.print("RecvBytes=");
   Serial.println(status);
 
   if(status > 0)
@@ -36,8 +38,15 @@ void setup() {
     data[status] = 0x0;
     Serial.println(data);
   }
-  Serial.print("Status:");
+  Serial.print("Status=");
   Serial.println(status);
+  Serial.println();
+
+  Nectis.Bg96TurnOff();
+  Nectis.Bg96End();
+
+  Serial.flush();
+  delay(1);
 }
 
 void loop() {

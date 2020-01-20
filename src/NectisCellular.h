@@ -5,7 +5,7 @@
 #include <IPAddress.h>
 #include <string>
 
-#include <WioCellular.h>
+#include "WioCellular.h"
 #include "WioCellLibforArduino.h"
 #include "Internal/AtSerial.h"
 #include "NectisCellularHttpHeader.h"
@@ -109,7 +109,7 @@ public:
     int HttpGet(const char *url, char *data, int dataSize);
     int HttpGet(const char *url, char *data, int dataSize, const NectisCellularHttpHeader &header);
     bool HttpPost(const char *url, const char *data, int *responseCode);
-    bool HttpPost(const char *url, const char *data, int *responseCode, const NectisCellularHttpHeader &header);
+    bool HttpPost(const char *url, const char *data, int dataSize, int *responseCode, const NectisCellularHttpHeader &header);
 
     bool SendUSSD(const char *in, char *out, int outSize);
 
@@ -127,9 +127,8 @@ public:
     bool IsTimeGot(struct tm *tim, bool jst);
     void GetCurrentTime(struct tm *tim, bool jst);
     
-    void PostDataViaHttp(char *post_data);
-    void PostDataViaUdp(char *post_data);
-    void PostDataViaUdp(char *post_data, int data_length);
+    void PostDataUsingTcp(char *data, uint32_t dataLength);
+    void PostDataUsingUdp(char *data, uint32_t dataLength);
 
     void GetBg96UfsStorageSize();
     void ListBg96UfsFileInfo();

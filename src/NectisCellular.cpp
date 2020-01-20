@@ -27,14 +27,12 @@
 
 #define ENDPOINT_URL                    "http://unified.soracom.io"
 
+#define HTTP_USER_AGENT                 "QUECTEL_MODULE"
 #if defined BINARY_PARSER_ENABLED
     #define HTTP_CONTENT_TYPE               "application/octet-stream"
 #else
     #define HTTP_CONTENT_TYPE           "application/json"
 #endif
-
-#define HTTP_USER_AGENT                 "QUECTEL_MODULE"
-#define HTTP_CONTENT_TYPE               "application/json"
 
 #define RET_OK(val)                     (ReturnOk(val))
 #define RET_ERR(val, err)               (ReturnError(__LINE__, val, err))
@@ -542,8 +540,8 @@ bool NectisCellular::HttpPost(const char *url, const char *data, int *responseCo
     return _Wio.HttpPost(url, data, responseCode);
 }
 
-bool NectisCellular::HttpPost(const char *url, const char *data, int *responseCode, const NectisCellularHttpHeader &header) {
-    return _Wio.HttpPost(url, data, responseCode, header);
+bool NectisCellular::HttpPost(const char *url, const char *data, int dataSize, int *responseCode, const NectisCellularHttpHeader &header) {
+    return _Wio.HttpPost(url, data, dataSize, responseCode, header);
 }
 
 //TODO
@@ -685,11 +683,9 @@ void NectisCellular::GetCurrentTime(struct tm *tim, bool jst) {
     }
 }
 
-void NectisCellular::PostDataViaHttp(char *post_data) {
+void NectisCellular::PostDataUsingTcp(char *data, uint32_t dataLength) {
     Serial.println("### Post.");
-    Serial.print("Post:");
-    Serial.print(post_data);
-    Serial.println("");
+    Serial.printf("Post=%s\n\n", data);
     
     NectisCellularHttpHeader header;
     header["Accept"] = "*/*";
@@ -698,19 +694,18 @@ void NectisCellular::PostDataViaHttp(char *post_data) {
     header["Content-Type"] = HTTP_CONTENT_TYPE;
     
     int status;
-    if (!HttpPost(ENDPOINT_URL, post_data, &status, header)) {
+    if (!HttpPost(ENDPOINT_URL, data, dataLength, &status, header)) {
         Serial.println("### ERROR! ###");
         goto err;
     }
-    Serial.print("Status:");
-    Serial.println(status);
+    Serial.printf("Status=%d\n", status);
 
 err:
     Serial.println("### Wait.");
     delay(INTERVAL);
 }
 
-void NectisCellular::PostDataViaUdp(char *post_data) {
+void NectisCellular::PostDataUsingUdp(char *data, uint32_t dataLength) {
     Serial.println("### Open.");
     int connectId;
     connectId = SocketOpen("uni.soracom.io", 23080, NECTIS_UDP);
@@ -720,17 +715,15 @@ void NectisCellular::PostDataViaUdp(char *post_data) {
     }
     
     Serial.println("### Send.");
-    Serial.print("Send:");
-    Serial.print(post_data);
-    Serial.println("");
-    if (!SocketSend(connectId, post_data)) {
+    Serial.printf("Send=%s\n", data);
+    if (!SocketSend(connectId, (const byte *)data, dataLength)) {
         Serial.println("### ERROR! ###");
         goto err_close;
     }
     
     Serial.println("### Receive.");
     int length;
-    length = SocketReceive(connectId, post_data, sizeof(post_data), RECEIVE_TIMEOUT);
+    length = SocketReceive(connectId, data, dataLength, RECEIVE_TIMEOUT);
     if (length < 0) {
         Serial.println("### ERROR! ###");
         Serial.println(length);
@@ -740,54 +733,7 @@ void NectisCellular::PostDataViaUdp(char *post_data) {
         Serial.println("### RECEIVE TIMEOUT! ###");
         goto err_close;
     }
-    Serial.print("Receive:");
-    Serial.print(post_data);
-    Serial.println("");
-
-err_close:
-    Serial.println("### Close.");
-    if (!SocketClose(connectId)) {
-        Serial.println("### ERROR! ###");
-        goto err;
-    }
-
-err:
-    delay(INTERVAL);
-}
-
-void NectisCellular::PostDataViaUdp(char *post_data, int data_length) {
-    Serial.println("### Open.");
-    int connectId;
-    connectId = SocketOpen("uni.soracom.io", 23080, NECTIS_UDP);
-    if (connectId < 0) {
-        Serial.println("### ERROR! ###");
-        goto err;
-    }
-    
-    Serial.println("### Send.");
-    Serial.print("Send:");
-    Serial.print(post_data);
-    Serial.println("");
-    if (!SocketSend(connectId, (const byte *)post_data, data_length)) {
-        Serial.println("### ERROR! ###");
-        goto err_close;
-    }
-    
-    Serial.println("### Receive.");
-    int length;
-    length = SocketReceive(connectId, post_data, data_length, RECEIVE_TIMEOUT);
-    if (length < 0) {
-        Serial.println("### ERROR! ###");
-        Serial.println(length);
-        goto err_close;
-    }
-    if (length == 0) {
-        Serial.println("### RECEIVE TIMEOUT! ###");
-        goto err_close;
-    }
-    Serial.print("Receive:");
-    Serial.print(post_data);
-    Serial.println("");
+    Serial.printf("Receive=%s\n", data);
 
 err_close:
     Serial.println("### Close.");

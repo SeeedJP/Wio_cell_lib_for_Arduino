@@ -1,13 +1,18 @@
-#include <NectisCellular.h>
+#include "NectisCellular.h"
 
-#define WEBHOOK_URL       "http://unified.soracom.io"
+// TCP_IPに比べ、ヘッダーのサイズが小さくなるため、少ないオーバーヘッドとなる。
+// UDPでデータを送信したい場合は、UDPをアンコメントして、TCP_IPをコメントアウトする。
+#define UDP
+// TCP_IPに比べ、ヘッダーのサイズが小さくなるため、少ないオーバーヘッドとなる。
+// UDPでデータを送信したい場合は、TCP_IPをアンコメントして、UDPをコメントアウトする。
+#define TCP
+
+constexpr char ENDPOINT_URL[] = "http://unified.soracom.io";
 
 NectisCellular Nectis;
 
-void setup() {
-  char data[100];
-  int status;
 
+void setup() {
   Serial.begin(115200);
   delay(4000);
   Serial.println("");
@@ -25,22 +30,37 @@ void setup() {
 
   Serial.println("### Setup completed.");
 
-  delay(3000);
-  
+
+  char data[128];
+  int status;
+
+  memset(&data[0], 0x00, sizeof(data));
+
   Serial.println("### Post.");
-  sprintf(data, "{\"value1\":\"uptime %lu\"}", millis() / 1000);
-  Serial.print("Post:");
-  Serial.print(data);
-  Serial.println("");
+  sprintf(data, "{\"uptime\": %lu}", millis() / 1000);
+  Serial.printf("Post=%s\n\n", data);
 
-//  if (!Nectis.HttpPost(WEBHOOK_URL, data, &status)) {
-//    Serial.println("### ERROR! ###");
-//  }
+#ifdef UDP
+  Nectis.PostDataUsingUdp(data, strlen(data));
+#endif  //UDP
 
-  Nectis.PostDataViaHttp(data);
+  memset(&data[0], 0x00, sizeof(data));
+
+  Serial.println("### Post.");
+  sprintf(data, "{\"uptime\": %lu}", millis() / 1000);
+  Serial.printf("Post=%s\n\n", data);
+
+#ifdef TCP
+  Nectis.PostDataUsingTcp(data, strlen(data));
+#endif  //TCP
   
-  Serial.print("Status:");
-  Serial.println(status);
+  Serial.printf("Status=%d\n\n", status);
+
+  Nectis.Bg96TurnOff();
+  Nectis.Bg96End();
+
+  Serial.flush();
+  delay(1);
 }
 
 void loop() {
