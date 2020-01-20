@@ -1,8 +1,11 @@
-#include <NectisCellular.h>
+/*
+ * Get IMEI of a SIM.
+ */
 
-#define INTERVAL  (5000)
+#include "NectisCellular.h"
 
 NectisCellular Nectis;
+
 
 void setup() {
   Serial.begin(115200);
@@ -22,12 +25,9 @@ void setup() {
 
   Serial.println("### Setup completed.");
 
-}
-
-void loop() {
-  char imei[30];
-  char imsi[30];
-  char tel[30];
+  char imei[16];
+  char imsi[16];
+  char tel[16];
 
   // IMEIを取得してみよう
   if(Nectis.GetIMEI(imei, sizeof(imei)) > 0){
@@ -46,6 +46,10 @@ void loop() {
     Serial.print("tel=");
     Serial.println(tel);
   }
-  
-  delay(INTERVAL);
+
+  Serial.flush();
+  delay(1);
+}
+
+void loop() {
 }

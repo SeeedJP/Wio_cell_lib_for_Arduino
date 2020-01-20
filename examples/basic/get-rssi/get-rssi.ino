@@ -2,7 +2,7 @@
  * Get RSSI.
  */
 
-#include <NectisCellular.h>
+#include "NectisCellular.h"
 
 #define INTERVAL  (5000)
 
@@ -32,9 +32,12 @@ void loop() {
   Serial.println("### Get RSSI.");
   int rssi = Nectis.GetReceivedSignalStrengthIndicator();
 
-  Serial.print("RSSI:");
+  Serial.print("RSSI=");
   Serial.print(rssi);
   Serial.println("");
+
+  Serial.flush();
+  delay(1);
 
   delay(INTERVAL);
 }

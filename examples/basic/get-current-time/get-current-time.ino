@@ -2,7 +2,7 @@
  * Get JST.
  */
 
-#include <NectisCellular.h>
+#include "NectisCellular.h"
 
 #define INTERVAL  (5000)
 
@@ -40,6 +40,8 @@ void loop() {
 
   Serial.print("JST:");
   Serial.println(currentTimeStr);
+  Serial.flush();
+  delay(1);
 
-  delay(5000);
+  delay(INTERVAL);
 }
