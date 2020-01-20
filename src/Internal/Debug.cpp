@@ -1,19 +1,15 @@
-#include "../WioCellularConfig.h"
+#include "../NectisCellularConfig.h"
 #include "Debug.h"
 
-#include "../WioCellularHardware.h"
+#ifdef NECTIS_DEBUG
 
-#ifdef WIO_DEBUG
-
-void Debug::Print(const char* str)
-{
-	SerialUSB.print(str);
+void Debug::Print(const char *str) {
+    Serial.print(str);
 }
 
-void Debug::Println(const char* str)
-{
-	Print(str);
-	Print("\r\n");
+void Debug::Println(const char *str) {
+    Print(str);
+    Print("\r\n");
 }
 
-#endif // WIO_DEBUG
+#endif // NECTIS_DEBUG

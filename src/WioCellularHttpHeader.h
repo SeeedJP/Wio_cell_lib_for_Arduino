@@ -1,9 +1,8 @@
 #pragma once
 
-#include "WioCellularConfig.h"
+#include "NectisCellularConfig.h"
 
 #include <map>
 
-class WioCellularHttpHeader : public std::map<String, String>
-{
+class WioCellularHttpHeader : public std::map<String, String> {
 };

@@ -1,18 +1,13 @@
 #include <NectisCellular.h>
 
-#define APN               "soracom.io"
-#define USERNAME          "sora"
-#define PASSWORD          "sora"
-
-#define WEBHOOK_EVENTNAME ""
-#define WEBHOOK_KEY       ""
-#define WEBHOOK_URL       "https://maker.ifttt.com/trigger/" WEBHOOK_EVENTNAME "/with/key/" WEBHOOK_KEY
-
-#define INTERVAL          (60000)
+#define WEBHOOK_URL       "http://unified.soracom.io"
 
 NectisCellular Nectis;
 
 void setup() {
+  char data[100];
+  int status;
+
   Serial.begin(115200);
   delay(4000);
   Serial.println("");
@@ -29,26 +24,24 @@ void setup() {
   Nectis.InitLteM();
 
   Serial.println("### Setup completed.");
-}
 
-void loop() {
-  char data[100];
-  int status;
-
+  delay(3000);
+  
   Serial.println("### Post.");
   sprintf(data, "{\"value1\":\"uptime %lu\"}", millis() / 1000);
   Serial.print("Post:");
   Serial.print(data);
   Serial.println("");
-  if (!Nectis.HttpPost(WEBHOOK_URL, data, &status)) {
-    Serial.println("### ERROR! ###");
-    goto err;
-  }
+
+//  if (!Nectis.HttpPost(WEBHOOK_URL, data, &status)) {
+//    Serial.println("### ERROR! ###");
+//  }
+
+  Nectis.PostDataViaHttp(data);
+  
   Serial.print("Status:");
   Serial.println(status);
-
-  err:
-  Serial.println("### Wait.");
-  delay(INTERVAL);
 }
 
+void loop() {
+}

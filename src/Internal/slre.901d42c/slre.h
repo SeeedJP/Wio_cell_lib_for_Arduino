@@ -30,8 +30,8 @@ extern "C" {
 #endif
 
 struct slre_cap {
-  const char *ptr;
-  int len;
+    const char *ptr;
+    int len;
 };
 
 
