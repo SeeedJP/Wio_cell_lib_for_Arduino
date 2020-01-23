@@ -8,6 +8,7 @@
 #include "WioCellular.h"
 #include "WioCellLibforArduino.h"
 #include "Internal/AtSerial.h"
+#include "Internal/Debug.h"
 #include "NectisCellularHttpHeader.h"
 
 #define NECTIS_TCP        (NectisCellular::SOCKET_TCP)

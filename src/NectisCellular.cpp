@@ -1,6 +1,5 @@
 #include "NectisCellular.h"
 
-#include "Internal/Debug.h"
 #include "Internal/StringBuilder.h"
 #include "Internal/ArgumentParser.h"
 
