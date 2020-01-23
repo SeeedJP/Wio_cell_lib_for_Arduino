@@ -2,6 +2,7 @@
 
 #include <WioCellLibforArduino.h>
 #include <WioCellularClient.h>
+#include <NectisCellular.h>
 #include <PubSubClient.h>        // https://github.com/SeeedJP/pubsubclient
 #include <stdio.h>
 
@@ -20,6 +21,7 @@
 
 WioCellular Wio;
 WioCellularClient WioClient(&Wio);
+NectisCellular Nectis;
 PubSubClient MqttClient;
 
 void callback(char *topic, byte *payload, unsigned int length) {
@@ -30,59 +32,45 @@ void callback(char *topic, byte *payload, unsigned int length) {
 }
 
 void setup() {
-    delay(200);
+  Serial.begin(115200);
+  delay(4000);
+  Serial.println("");
+  Serial.println("--- START ---------------------------------------------------");
 
-    Serial.begin(115200);
-    Serial.println("");
-    Serial.println("--- START ---------------------------------------------------");
+  Serial.println("### I/O Initialize.");
+  Nectis.Init();
+  delay(100);
+  Serial.println("### Power supply cellular ON.");
+  Nectis.PowerSupplyCellular(true);
+  delay(100);
 
-    Serial.println("### I/O Initialize.");
-    Wio.Init();
+  Nectis.Bg96Begin();
+  Nectis.InitLteM();
 
-    Serial.println("### Power supply ON.");
-    Wio.PowerSupplyCellular(true);
-    delay(500);
+  Serial.println("### Connecting to MQTT server \"" MQTT_SERVER_HOST "\"");
+  MqttClient.setServer(MQTT_SERVER_HOST, MQTT_SERVER_PORT);
+  MqttClient.setCallback(callback);
+  MqttClient.setClient(WioClient);
+  if (!MqttClient.connect(ID)) {
+    Serial.println("### ERROR! ###");
+    return;
+  }
+  MqttClient.subscribe(IN_TOPIC);
 
-    Serial.println("### Turn on or reset.");
-#ifdef ARDUINO_WIO_LTE_M1NB1_BG96
-    Wio.SetAccessTechnology(WioCellular::ACCESS_TECHNOLOGY_LTE_M1);
-    Wio.SetSelectNetwork(WioCellular::SELECT_NETWORK_MODE_MANUAL_IMSI);
-#endif
-    if (!Wio.TurnOnOrReset()) {
-        Serial.println("### ERROR! ###");
-        return;
-    }
-
-    Serial.println("### Connecting to \"" APN "\".");
-    if (!Wio.Activate(APN, USERNAME, PASSWORD)) {
-        Serial.println("### ERROR! ###");
-        return;
-    }
-
-    Serial.println("### Connecting to MQTT server \"" MQTT_SERVER_HOST "\"");
-    MqttClient.setServer(MQTT_SERVER_HOST, MQTT_SERVER_PORT);
-    MqttClient.setCallback(callback);
-    MqttClient.setClient(WioClient);
-    if (!MqttClient.connect(ID)) {
-        Serial.println("### ERROR! ###");
-        return;
-    }
-    MqttClient.subscribe(IN_TOPIC);
-
-    Serial.println("### Setup completed.");
+  Serial.println("### Setup completed.");
 }
 
 void loop() {
-    char data[100];
-    sprintf(data, "{\"uptime\":%lu}", millis() / 1000);
-    Serial.print("Publish:");
-    Serial.print(data);
-    Serial.println("");
-    MqttClient.publish(OUT_TOPIC, data);
+  char data[100];
+  sprintf(data, "{\"uptime\":%lu}", millis() / 1000);
+  Serial.print("Publish:");
+  Serial.print(data);
+  Serial.println("");
+  MqttClient.publish(OUT_TOPIC, data);
 
-    unsigned long next = millis();
-    while (millis() < next + INTERVAL) {
-        MqttClient.loop();
-    }
+  unsigned long next = millis();
+  while (millis() < next + INTERVAL) {
+    MqttClient.loop();
+  }
 }
 
