@@ -1,15 +1,14 @@
 #pragma once
 
 #include "NectisCellularConfig.h"
-
-#include <IPAddress.h>
 #include <string>
 
 #include "WioCellular.h"
 #include "WioCellLibforArduino.h"
+#include "IPAddress.h"
+#include "NectisCellularHttpHeader.h"
 #include "Internal/AtSerial.h"
 #include "Internal/Debug.h"
-#include "NectisCellularHttpHeader.h"
 
 #define NECTIS_TCP        (NectisCellular::SOCKET_TCP)
 #define NECTIS_UDP        (NectisCellular::SOCKET_UDP)
@@ -110,7 +109,7 @@ public:
     int HttpGet(const char *url, char *data, int dataSize);
     int HttpGet(const char *url, char *data, int dataSize, const NectisCellularHttpHeader &header);
     bool HttpPost(const char *url, const char *data, int *responseCode);
-    bool HttpPost(const char *url, const char *data, int dataSize, int *responseCode, const NectisCellularHttpHeader &header);
+    bool HttpPost(const char *url, const char *data, int *responseCode, const NectisCellularHttpHeader &header);
 
     bool SendUSSD(const char *in, char *out, int outSize);
 
@@ -128,8 +127,9 @@ public:
     bool IsTimeGot(struct tm *tim, bool jst);
     void GetCurrentTime(struct tm *tim, bool jst);
     
-    void PostDataUsingTcp(char *data, uint32_t dataLength);
-    void PostDataUsingUdp(char *data, uint32_t dataLength);
+    void PostDataViaHttp(char *post_data);
+    void PostDataViaUdp(char *post_data);
+    void PostDataViaUdp(char *post_data, int data_length);
 
     void GetBg96UfsStorageSize();
     void ListBg96UfsFileInfo();

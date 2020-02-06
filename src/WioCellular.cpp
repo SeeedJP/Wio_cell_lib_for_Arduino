@@ -1002,10 +1002,10 @@ bool WioCellular::HttpPost(const char *url, const char *data, int *responseCode)
     header["Connection"] = "Keep-Alive";
     header["Content-Type"] = HTTP_CONTENT_TYPE;
     
-    return HttpPost(url, data, strlen(data), responseCode, header);
+    return HttpPost(url, data, responseCode, header);
 }
 
-bool WioCellular::HttpPost(const char *url, const char *data, int dataSize, int *responseCode, const NectisCellularHttpHeader &header) {
+bool WioCellular::HttpPost(const char *url, const char *data, int *responseCode, const NectisCellularHttpHeader &header) {
     std::string response;
     ArgumentParser parser;
     
@@ -1047,7 +1047,7 @@ bool WioCellular::HttpPost(const char *url, const char *data, int dataSize, int 
     headerSb.Write("Host: ");
     headerSb.Write(host, hostLength);
     headerSb.Write("\r\n");
-    if (!headerSb.WriteFormat("Content-Length: %d\r\n", dataSize))
+    if (!headerSb.WriteFormat("Content-Length: %d\r\n", strlen(data)))
         return RET_ERR(false, E_UNKNOWN);
     for (auto it = header.begin(); it != header.end(); it++) {
         headerSb.Write(it->first.c_str());
@@ -1061,14 +1061,14 @@ bool WioCellular::HttpPost(const char *url, const char *data, int dataSize, int 
     DEBUG_PRINTLN("===");
     
     StringBuilder str;
-    if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + dataSize))
+    if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + strlen(data)))
         return RET_ERR(false, E_UNKNOWN);
     _AtSerial.WriteCommand(str.GetString());
     if (!_AtSerial.ReadResponse("^CONNECT$", 60000, NULL))
         return RET_ERR(false, E_UNKNOWN);
     const char *headerStr = headerSb.GetString();
     _AtSerial.WriteBinary((const byte *) headerStr, strlen(headerStr));
-    _AtSerial.WriteBinary((const byte *) data, dataSize);
+    _AtSerial.WriteBinary((const byte *) data, strlen(data));
     if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
         return RET_ERR(false, E_UNKNOWN);
     if (!_AtSerial.ReadResponse("^\\+QHTTPPOST: (.*)$", 60000, &response))

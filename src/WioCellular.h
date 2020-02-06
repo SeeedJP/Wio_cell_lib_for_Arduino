@@ -116,10 +116,11 @@ public:
     int HttpGet(const char *url, char *data, int dataSize);
     int HttpGet(const char *url, char *data, int dataSize, const NectisCellularHttpHeader &header);
     bool HttpPost(const char *url, const char *data, int *responseCode);
-    bool HttpPost(const char *url, const char *data, int dataSize, int *responseCode, const NectisCellularHttpHeader &header);
-
-    bool HttpPost2(const char *url, const char *data, int *responseCode, char *recv_data, int recv_dataSize);
-    bool HttpPost2(const char *url, const char *data, int *responseCode, char *recv_data, int recv_dataSize, const NectisCellularHttpHeader &header);
+    bool HttpPost(const char *url, const char *data, int *responseCode, const NectisCellularHttpHeader &header);
     
     bool SendUSSD(const char *in, char *out, int outSize);
+    
+    // ToDo: Pull Request
+    bool HttpPost2(const char *url, const char *data, int *responseCode, char *recv_data, int recv_dataSize);
+    bool HttpPost2(const char *url, const char *data, int *responseCode, char *recv_data, int recv_dataSize, const NectisCellularHttpHeader &header);
 };
