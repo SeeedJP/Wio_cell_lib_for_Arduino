@@ -1,45 +1,43 @@
-#include <WioCellLibforArduino.h>
-#include <limits.h>
+/*
+ * Get RSSI.
+ */
+
+#include "NectisCellular.h"
 
 #define INTERVAL  (5000)
 
-WioCellular Wio;
+NectisCellular Nectis;
+
 
 void setup() {
-  delay(200);
+  Serial.begin(115200);
+  delay(4000);
+  Serial.println("");
+  Serial.println("--- START ---------------------------------------------------");
 
-  SerialUSB.begin(115200);
-  SerialUSB.println("");
-  SerialUSB.println("--- START ---------------------------------------------------");
-  
-  SerialUSB.println("### I/O Initialize.");
-  Wio.Init();
-  
-  SerialUSB.println("### Power supply ON.");
-  Wio.PowerSupplyCellular(true);
-  delay(500);
+  Serial.println("### I/O Initialize.");
+  Nectis.Init();
+  delay(100);
+  Serial.println("### Power supply cellular ON.");
+  Nectis.PowerSupplyCellular(true);
+  delay(100);
 
-  SerialUSB.println("### Turn on or reset.");
-  if (!Wio.TurnOnOrReset()) {
-    SerialUSB.println("### ERROR! ###");
-    return;
-  }
-  delay(3000);
+  Nectis.Bg96Begin();
+  Nectis.InitLteM();
 
-  SerialUSB.println("### Setup completed.");
+  Serial.println("### Setup completed.");
 }
 
 void loop() {
-  SerialUSB.println("### Get RSSI.");
-  int rssi = Wio.GetReceivedSignalStrength();
-  if (rssi == INT_MIN) {
-    SerialUSB.println("### ERROR! ###");
-    goto err;
-  }
-  SerialUSB.print("RSSI:");
-  SerialUSB.print(rssi);
-  SerialUSB.println("");
-  
-err:
+  Serial.println("### Get RSSI.");
+  int rssi = Nectis.GetReceivedSignalStrengthIndicator();
+
+  Serial.print("RSSI=");
+  Serial.print(rssi);
+  Serial.println("");
+
+  Serial.flush();
+  delay(1);
+
   delay(INTERVAL);
 }

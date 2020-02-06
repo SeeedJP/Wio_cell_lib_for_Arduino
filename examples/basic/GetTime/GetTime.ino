@@ -1,45 +1,48 @@
-#include <WioCellLibforArduino.h>
+/*
+ * Get JST.
+ */
+
+#include "NectisCellular.h"
 
 #define INTERVAL  (5000)
 
-WioCellular Wio;
+NectisCellular Nectis;
+
 
 void setup() {
-  delay(200);
+  Serial.begin(115200);
+  delay(4000);
+  Serial.println("");
+  Serial.println("--- START ---------------------------------------------------");
 
-  SerialUSB.begin(115200);
-  SerialUSB.println("");
-  SerialUSB.println("--- START ---------------------------------------------------");
-  
-  SerialUSB.println("### I/O Initialize.");
-  Wio.Init();
-  
-  SerialUSB.println("### Power supply ON.");
-  Wio.PowerSupplyCellular(true);
-  delay(500);
+  Serial.println("### I/O Initialize.");
+  Nectis.Init();
+  delay(100);
+  Serial.println("### Power supply cellular ON.");
+  Nectis.PowerSupplyCellular(true);
+  delay(100);
 
-  SerialUSB.println("### Turn on or reset.");
-  if (!Wio.TurnOnOrReset()) {
-    SerialUSB.println("### ERROR! ###");
-    return;
-  }
+  Nectis.Bg96Begin();
+  Nectis.InitLteM();
 
-  SerialUSB.println("### Setup completed.");
+  Serial.println("### Setup completed.");
 }
 
 void loop() {
-  SerialUSB.println("### Get time.");
-  struct tm now;
-  if (!Wio.GetTime(&now)) {
-    SerialUSB.println("### ERROR! ###");
-    goto err;
-  }
-  SerialUSB.print("UTC:");
-  char str[100];
-  sprintf(str, "%04d/%02d/%02d %02d:%02d:%02d", now.tm_year + 1900, now.tm_mon + 1, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec);
-  SerialUSB.println(str);
+  Serial.println("### Get time.");
 
-err:
+  //    Get the current time.
+  struct tm currentTime;
+  char currentTimeStr[64];
+
+  Nectis.GetCurrentTime(&currentTime, true);
+  strftime(currentTimeStr, sizeof(currentTimeStr), "%Y/%m/%d %H:%M:%S", &currentTime);
+
+  Serial.print("JST=");
+  Serial.println(currentTimeStr);
+
+  Serial.flush();
+  delay(1);
+
   delay(INTERVAL);
 }
-
