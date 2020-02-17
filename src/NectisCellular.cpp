@@ -27,14 +27,7 @@
 
 #define ENDPOINT_URL                    "http://unified.soracom.io"
 
-#if defined BINARY_PARSER_ENABLED
-    #define HTTP_CONTENT_TYPE               "application/octet-stream"
-#else
-    #define HTTP_CONTENT_TYPE           "application/json"
-#endif
-
 #define HTTP_USER_AGENT                 "QUECTEL_MODULE"
-#define HTTP_CONTENT_TYPE               "application/json"
 
 #define RET_OK(val)                     (ReturnOk(val))
 #define RET_ERR(val, err)               (ReturnError(__LINE__, val, err))
@@ -538,12 +531,20 @@ int NectisCellular::HttpGet(const char *url, char *data, int dataSize, const Nec
     return _Wio.HttpGet(url,data,dataSize, header);
 }
 
-bool NectisCellular::HttpPost(const char *url, const char *data, int *responseCode) {
-    return _Wio.HttpPost(url, data, responseCode);
+bool NectisCellular::HttpPost(const char *url, const char *data, const int dataSize, int *responseCode) {
+    return _Wio.HttpPost(url, data, dataSize, responseCode);
 }
 
-bool NectisCellular::HttpPost(const char *url, const char *data, int *responseCode, const NectisCellularHttpHeader &header) {
-    return _Wio.HttpPost(url, data, responseCode, header);
+bool NectisCellular::HttpPost(const char *url, const char *data, const int dataSize, int *responseCode, const NectisCellularHttpHeader &header) {
+    return _Wio.HttpPost(url, data, dataSize, responseCode, header);
+}
+
+bool NectisCellular::HttpPost(const char *url, const byte *data, const int dataSize, int *responseCode) {
+    return _Wio.HttpPost(url, data, dataSize, responseCode);
+}
+
+bool NectisCellular::HttpPost(const char *url, const byte *data, const int dataSize, int *responseCode, const NectisCellularHttpHeader &header) {
+    return _Wio.HttpPost(url, data, dataSize, responseCode, header);
 }
 
 //TODO
@@ -685,12 +686,13 @@ void NectisCellular::GetCurrentTime(struct tm *tim, bool jst) {
     }
 }
 
-void NectisCellular::PostDataViaTcp(char *post_data) {
+
+void NectisCellular::PostDataViaTcp(byte *post_data, int data_size) {
     Serial.println("### Post.");
-    Serial.print("Post:");
-    Serial.print(post_data);
-    Serial.println("");
+    Serial.println("Post binary data.");
     
+    constexpr char HTTP_CONTENT_TYPE[] = "application/octet-stream";
+
     NectisCellularHttpHeader header;
     header["Accept"] = "*/*";
     header["User-Agent"] = HTTP_USER_AGENT;
@@ -698,7 +700,7 @@ void NectisCellular::PostDataViaTcp(char *post_data) {
     header["Content-Type"] = HTTP_CONTENT_TYPE;
     
     int status;
-    if (!HttpPost(ENDPOINT_URL, post_data, &status, header)) {
+    if (!HttpPost(ENDPOINT_URL, post_data, (const int)data_size, &status, header)) {
         Serial.println("### ERROR! ###");
         goto err;
     }
@@ -710,7 +712,77 @@ err:
     delay(INTERVAL);
 }
 
-void NectisCellular::PostDataViaUdp(char *post_data) {
+void NectisCellular::PostDataViaTcp(char *post_data, int data_size) {
+    Serial.println("### Post.");
+    Serial.print("Post:");
+    Serial.print(post_data);
+    Serial.println("");
+    
+    constexpr char HTTP_CONTENT_TYPE[] = "application/json";
+
+    NectisCellularHttpHeader header;
+    header["Accept"] = "*/*";
+    header["User-Agent"] = HTTP_USER_AGENT;
+    header["Connection"] = "Keep-Alive";
+    header["Content-Type"] = HTTP_CONTENT_TYPE;
+    
+    int status;
+    if (!HttpPost(ENDPOINT_URL, post_data, (const int)data_size, &status, header)) {
+        Serial.println("### ERROR! ###");
+        goto err;
+    }
+    Serial.print("Status:");
+    Serial.println(status);
+
+err:
+    Serial.println("### Wait.");
+    delay(INTERVAL);
+}
+
+void NectisCellular::PostDataViaUdp(byte *post_data, int data_size) {
+    Serial.println("### Open.");
+    int connectId;
+    connectId = SocketOpen("uni.soracom.io", 23080, NECTIS_UDP);
+    if (connectId < 0) {
+        Serial.println("### ERROR! ###");
+        goto err;
+    }
+    
+    Serial.println("### Send.");
+    Serial.println("Send binary data.");
+    if (!SocketSend(connectId, post_data, data_size)) {
+        Serial.println("### ERROR! ###");
+        goto err_close;
+    }
+    
+    Serial.println("### Receive.");
+    int length;
+    length = SocketReceive(connectId, post_data, data_size, RECEIVE_TIMEOUT);
+    if (length < 0) {
+        Serial.println("### ERROR! ###");
+        Serial.println(length);
+        goto err_close;
+    }
+    if (length == 0) {
+        Serial.println("### RECEIVE TIMEOUT! ###");
+        goto err_close;
+    }
+    Serial.print("Receive:");
+    Serial.print((char *)post_data);
+    Serial.println("");
+
+err_close:
+    Serial.println("### Close.");
+    if (!SocketClose(connectId)) {
+        Serial.println("### ERROR! ###");
+        goto err;
+    }
+
+err:
+    delay(INTERVAL);
+}
+
+void NectisCellular::PostDataViaUdp(char *post_data, int data_size) {
     Serial.println("### Open.");
     int connectId;
     connectId = SocketOpen("uni.soracom.io", 23080, NECTIS_UDP);
@@ -730,7 +802,7 @@ void NectisCellular::PostDataViaUdp(char *post_data) {
     
     Serial.println("### Receive.");
     int length;
-    length = SocketReceive(connectId, post_data, sizeof(post_data), RECEIVE_TIMEOUT);
+    length = SocketReceive(connectId, post_data, data_size, RECEIVE_TIMEOUT);
     if (length < 0) {
         Serial.println("### ERROR! ###");
         Serial.println(length);

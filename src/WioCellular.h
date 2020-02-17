@@ -115,9 +115,11 @@ public:
     
     int HttpGet(const char *url, char *data, int dataSize);
     int HttpGet(const char *url, char *data, int dataSize, const NectisCellularHttpHeader &header);
-    bool HttpPost(const char *url, const char *data, int *responseCode);
-    bool HttpPost(const char *url, const char *data, int *responseCode, const NectisCellularHttpHeader &header);
-    
+    bool HttpPost(const char *url, const char *data, const int dataSize, int *responseCode);
+    bool HttpPost(const char *url, const char *data, const int dataSize, int *responseCode, const NectisCellularHttpHeader &header);
+    bool HttpPost(const char *url, const byte *data, const int dataSize, int *responseCode);
+    bool HttpPost(const char *url, const byte *data, const int dataSize, int *responseCode, const NectisCellularHttpHeader &header);
+
     bool SendUSSD(const char *in, char *out, int outSize);
     
     // ToDo: Pull Request
