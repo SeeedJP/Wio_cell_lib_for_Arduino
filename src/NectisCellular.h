@@ -127,9 +127,8 @@ public:
     bool IsTimeGot(struct tm *tim, bool jst);
     void GetCurrentTime(struct tm *tim, bool jst);
     
-    void PostDataViaHttp(char *post_data);
+    void PostDataViaTcp(char *post_data);
     void PostDataViaUdp(char *post_data);
-    void PostDataViaUdp(char *post_data, int data_length);
 
     void GetBg96UfsStorageSize();
     void ListBg96UfsFileInfo();
