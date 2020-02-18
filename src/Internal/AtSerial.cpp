@@ -137,15 +137,11 @@ bool AtSerial::ReadResponse(const char *pattern, unsigned long timeout, std::str
     }
 }
 
-#include "../../../../cores/nRF5/Uart.cpp"
-
 bool AtSerial::WriteCommandAndReadResponse(const char *command, const char *pattern, unsigned long timeout,
                                            std::string *capture) {
     WriteCommand(command);
     DEBUG_PRINT("WriteCommandAndReadResponse: ");
     DEBUG_PRINTLN(command);
-    Serial1.read();
-    Serial.flush();
     return ReadResponse(pattern, timeout, capture);
 }
 

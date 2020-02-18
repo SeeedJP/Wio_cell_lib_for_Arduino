@@ -1084,7 +1084,9 @@ bool WioCellular::HttpPost(const char *url, const char *data, const int dataSize
     } else {
         *responseCode = atoi(parser[1]);
     }
-    
+
+    Serial.println((char *)data);
+
     return RET_OK(true);
 }
 
