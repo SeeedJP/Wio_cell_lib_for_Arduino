@@ -856,7 +856,6 @@ int WioCellular::SocketReceive(int connectId, byte *data, int dataSize, long tim
     sw.Restart();
     int dataLength;
     while ((dataLength = SocketReceive(connectId, data, dataSize)) == 0) {
-        Serial.printf("dataLength=%d\n", dataLength);
         if (sw.ElapsedMilliseconds() >= (unsigned long) timeout)
             return 0;
         delay(POLLING_INTERVAL);

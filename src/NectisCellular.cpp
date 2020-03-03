@@ -726,7 +726,7 @@ void NectisCellular::PostDataViaUdp(byte *post_data, int data_size) {
         Serial.println("### RECEIVE TIMEOUT! ###");
         goto err_close;
     }
-    Serial.print("Receive:");
+    Serial.print("Receive=");
     Serial.print((char *)post_data);
     Serial.println("");
 
@@ -771,7 +771,7 @@ void NectisCellular::PostDataViaUdp(char *post_data, int data_size) {
         Serial.println("### RECEIVE TIMEOUT! ###");
         goto err_close;
     }
-    Serial.print("Receive:");
+    Serial.print("Receive=");
     Serial.print(post_data);
     Serial.println("");
 
