@@ -152,50 +152,6 @@ NectisCellular::ErrorCodeType NectisCellular::GetLastError() const {
     return _LastErrorCode;
 }
 
-void NectisCellular::Init() {
-    ////////////////////
-    // Module
-    
-    // Power Supply
-    pinMode(MODULE_PWR_PIN, OUTPUT);            digitalWrite(MODULE_PWR_PIN, LOW);
-    // Turn On/Off
-    pinMode(MODULE_PWRKEY_PIN, OUTPUT);         digitalWrite(MODULE_PWRKEY_PIN, LOW);
-    pinMode(MODULE_RESET_PIN, OUTPUT);          digitalWrite(MODULE_RESET_PIN, LOW);
-    // Status Indication
-    pinMode(MODULE_STATUS_PIN, INPUT_PULLUP);
-    // Main SerialUART Interface
-    pinMode(MODULE_DTR_PIN, OUTPUT);            digitalWrite(MODULE_DTR_PIN, LOW);
-    
-    ////////////////////
-    // Led
-    pinMode(LED_RED, OUTPUT);                   digitalWrite(LED_RED, LOW);
-    pinMode(LED_BLUE, OUTPUT);                  digitalWrite(LED_BLUE, LOW);
-    ////////////////////
-    
-    // AD Converter
-    pinMode(BATTERY_LEVEL_ENABLE_PIN, OUTPUT);
-    
-    // Grove
-    pinMode(GROVE_VCCB_PIN, OUTPUT);            digitalWrite(GROVE_VCCB_PIN, LOW);
-
-    // RTC
-    pinMode(RTC_INTRB, INPUT_PULLUP);           digitalWrite(RTC_INTRB, HIGH);
-    pinMode(RTC_I2C_SDA_PIN, OUTPUT);           digitalWrite(RTC_I2C_SDA_PIN, HIGH);
-}
-
-void NectisCellular::PowerSupplyCellular(bool on) {
-    digitalWrite(MODULE_PWR_PIN, on ? HIGH : LOW);
-    delay(200);
-    digitalWrite(MODULE_PWRKEY_PIN, on ? HIGH : LOW);
-    delay(600);
-    digitalWrite(MODULE_PWRKEY_PIN, LOW);
-}
-
-void NectisCellular::PowerSupplyGrove(bool on) {
-    digitalWrite(MODULE_PWR_PIN, on ? HIGH : LOW);
-    delay(100);
-    digitalWrite(GROVE_VCCB_PIN, on ? HIGH : LOW);
-}
 
 bool NectisCellular::TurnOnOrReset() {
     std::string response;
@@ -561,12 +517,7 @@ bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseC
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // NetisCellular
-
-void NectisCellular::SoftReset() {
-    NVIC_SystemReset();
-}
-
-void NectisCellular::Bg96Begin() {
+void NectisCellular::Begin() {
     // Initialize Uart between BL654 and BG96.
     Serial1.setPins(MODULE_UART_RX_PIN, MODULE_UART_TX_PIN, MODULE_RTS_PIN, MODULE_CTS_PIN);
     Serial1.begin(115200);
@@ -574,12 +525,8 @@ void NectisCellular::Bg96Begin() {
     delay(200);
 }
 
-void NectisCellular::Bg96End() {
+void NectisCellular::End() {
     Serial1.end();
-}
-
-bool NectisCellular::Bg96TurnOff() {
-    return TurnOff();
 }
 
 void NectisCellular::InitLteM() {
@@ -595,6 +542,18 @@ void NectisCellular::InitLteM() {
     }
 
     delay(100);
+
+
+/*
+ * ToDO:
+ * ### Connecting to "soracom.io".
+ * <- AT+CEREG?
+ * -> 
+ * -> +CEREG: 0,0
+ * -> 
+ * -> OK
+ * ERROR! 575
+ */
     Serial.println("### Connecting to \"" APN "\".");
     if (!Activate(APN, USERNAME, PASSWORD)) {
         Serial.println("### ERROR!; Activate ###");
@@ -626,7 +585,7 @@ int NectisCellular::GetReceivedSignalStrengthIndicator() {
     while (rssi == - 999) {
         rssi = GetReceivedSignalStrength();
         if (rssi_count == 10) {
-            SoftReset();
+            NVIC_SystemReset();
         }
         rssi_count++;
         delay(1000);
@@ -767,7 +726,7 @@ void NectisCellular::PostDataViaUdp(byte *post_data, int data_size) {
         Serial.println("### RECEIVE TIMEOUT! ###");
         goto err_close;
     }
-    Serial.print("Receive:");
+    Serial.print("Receive=");
     Serial.print((char *)post_data);
     Serial.println("");
 
@@ -812,7 +771,7 @@ void NectisCellular::PostDataViaUdp(char *post_data, int data_size) {
         Serial.println("### RECEIVE TIMEOUT! ###");
         goto err_close;
     }
-    Serial.print("Receive:");
+    Serial.print("Receive=");
     Serial.print(post_data);
     Serial.println("");
 
