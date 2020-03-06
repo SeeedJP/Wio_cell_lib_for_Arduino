@@ -731,7 +731,7 @@ void NectisCellular::PostDataViaUdp(byte *post_data, int data_size) {
     Serial.println("");
 
 err_close:
-    Serial.println("### Close.");
+    Serial.println("### Close.\n");
     if (!SocketClose(connectId)) {
         Serial.println("### ERROR! ###");
         goto err;
@@ -776,7 +776,7 @@ void NectisCellular::PostDataViaUdp(char *post_data, int data_size) {
     Serial.println("");
 
 err_close:
-    Serial.println("### Close.");
+    Serial.println("### Close.\n");
     if (!SocketClose(connectId)) {
         Serial.println("### ERROR! ###");
         goto err;
