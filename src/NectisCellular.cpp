@@ -1118,69 +1118,69 @@ void NectisCellular::InitNbIoT() {
 }
 
 int NectisCellular::GetReceivedSignalStrengthIndicator() {
-    int rssi = GetReceivedSignalStrength();
-    int rssi_count = 0;
-    while (rssi == - 999) {
-        rssi = GetReceivedSignalStrength();
-        if (rssi_count == 10) {
-            SoftReset();
-        }
-        rssi_count++;
-        delay(1000);
-    }
+	int rssi = GetReceivedSignalStrength();
+	int rssi_count = 0;
+	while (rssi == - 999) {
+		rssi = GetReceivedSignalStrength();
+		if (rssi_count == 10) {
+			SoftReset();
+		}
+		rssi_count++;
+		delay(1000);
+	}
 
-    return rssi;
+	return rssi;
 }
 
 bool NectisCellular::IsTimeGot(struct tm *tim, bool jst) {
-    std::string response;
+	std::string response;
 
-    // AT+QLTS=1 -> Acquire UTC
-    // AT+QLTS=2 -> Acquire JST
-    if (jst) {
-      _AtSerial.WriteCommand("AT+QLTS=2");
-    } else {
-      _AtSerial.WriteCommand("AT+QLTS=1");
-    }
-    
-    if (!_AtSerial.ReadResponse("^\\+QLTS: (.*)$", 500, &response)) return RET_ERR(false, E_UNKNOWN);
-    if (!_AtSerial.ReadResponse("^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
-    
-    if (strlen(response.c_str()) != 26) return RET_ERR(false, E_UNKNOWN);
-    
-    const char* parameter = response.c_str();
+	// AT+QLTS=1 -> Acquire UTC
+	// AT+QLTS=2 -> Acquire JST
+	if (jst) {
+		_AtSerial.WriteCommand("AT+QLTS=2");
+	} else {
+		_AtSerial.WriteCommand("AT+QLTS=1");
+	}
+	
+	if (!_AtSerial.ReadResponse("^\\+QLTS: (.*)$", 500, &response)) return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.ReadResponse("^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+	
+	if (strlen(response.c_str()) != 26) return RET_ERR(false, E_UNKNOWN);
+	
+	const char* parameter = response.c_str();
 
-    if (parameter[0] != '"') return RET_ERR(false, E_UNKNOWN);
-    if (parameter[5] != '/') return RET_ERR(false, E_UNKNOWN);
-    if (parameter[8] != '/') return RET_ERR(false, E_UNKNOWN);
-    if (parameter[11] != ',') return RET_ERR(false, E_UNKNOWN);
-    if (parameter[14] != ':') return RET_ERR(false, E_UNKNOWN);
-    if (parameter[17] != ':') return RET_ERR(false, E_UNKNOWN);
-    if (parameter[23] != ',') return RET_ERR(false, E_UNKNOWN);
-    if (parameter[25] != '"') return RET_ERR(false, E_UNKNOWN);
-    
-    tim->tm_year = atoi(&parameter[1]) - 1900;
-    tim->tm_mon = atoi(&parameter[6]) - 1;
-    tim->tm_mday = atoi(&parameter[9]);
-    tim->tm_hour = atoi(&parameter[12]);
-    tim->tm_min = atoi(&parameter[15]);
-    tim->tm_sec = atoi(&parameter[18]);
-    tim->tm_wday = 0;
-    tim->tm_yday = 0;
-    tim->tm_isdst = 0;
-    
-    // Update tm_wday and tm_yday
-    mktime(tim);
-    
-    return RET_OK(true);
+	if (parameter[0] != '"') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[5] != '/') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[8] != '/') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[11] != ',') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[14] != ':') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[17] != ':') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[23] != ',') return RET_ERR(false, E_UNKNOWN);
+	if (parameter[25] != '"') return RET_ERR(false, E_UNKNOWN);
+
+	tim->tm_year = atoi(&parameter[1]) - 1900;
+	tim->tm_mon = atoi(&parameter[6]) - 1;
+	tim->tm_mday = atoi(&parameter[9]);
+	tim->tm_hour = atoi(&parameter[12]);
+	tim->tm_min = atoi(&parameter[15]);
+	tim->tm_sec = atoi(&parameter[18]);
+	tim->tm_wday = 0;
+	tim->tm_yday = 0;
+	tim->tm_isdst = 0;
+	
+	// Update tm_wday and tm_yday
+	mktime(tim);
+	
+	return RET_OK(true);
 }
 
 void NectisCellular::GetCurrentTime(struct tm *tim, bool jst) {
-    // Get time in JST.
-    while (!IsTimeGot(tim, jst)) {
-        Serial.println("### ERROR! ###");
-        delay(1000);
-    }
+	// Get time in JST.
+	while (!IsTimeGot(tim, jst)) {
+		Serial.println("### ERROR! ###");
+		delay(1000);
+	}
 }
 
 
@@ -1257,339 +1257,339 @@ bool NectisCellular::HttpPost(const char* url, const char* data, const int dataS
 }
 
 bool NectisCellular::HttpPost(const char *url, const byte *data, const int dataSize, int *responseCode, const NectisCellularHttpHeader &header) {
-    std::string response;
-    ArgumentParser parser;
+	std::string response;
+	ArgumentParser parser;
     
-    if (strncmp(url, "https:", 6) == 0) {
-        if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"sslctxid\",1", "^OK$", 500, NULL))
-            return RET_ERR(false, E_UNKNOWN);
-        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL))
-            return RET_ERR(false, E_UNKNOWN);
+	if (strncmp(url, "https:", 6) == 0) {
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"sslctxid\",1", "^OK$", 500, NULL))
+			return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL))
+			return RET_ERR(false, E_UNKNOWN);
 #if defined ARDUINO_WIO_3G
-        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 #elif defined ARDUINO_NECTIS
-        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 #endif
-        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL))
-            return RET_ERR(false, E_UNKNOWN);
-    }
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL))
+			return RET_ERR(false, E_UNKNOWN);
+	}
     
-    if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"requestheader\",1", "^OK$", 500, NULL))
-        return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"requestheader\",1", "^OK$", 500, NULL))
+		return RET_ERR(false, E_UNKNOWN);
+	
+	if (!HttpSetUrl(url))
+		return RET_ERR(false, E_UNKNOWN);
     
-    if (!HttpSetUrl(url))
-        return RET_ERR(false, E_UNKNOWN);
+	const char *host;
+	int hostLength;
+	const char *uri;
+	int uriLength;
+	if (!SplitUrl(url, &host, &hostLength, &uri, &uriLength))
+		return RET_ERR(false, E_UNKNOWN);
     
-    const char *host;
-    int hostLength;
-    const char *uri;
-    int uriLength;
-    if (!SplitUrl(url, &host, &hostLength, &uri, &uriLength))
-        return RET_ERR(false, E_UNKNOWN);
+	StringBuilder headerSb;
+	headerSb.Write("POST ");
+	if (uriLength <= 0) {
+		headerSb.Write("/");
+	} else {
+		headerSb.Write(uri, uriLength);
+	}
+	headerSb.Write(" HTTP/1.1\r\n");
+	headerSb.Write("Host: ");
+	headerSb.Write(host, hostLength);
+	headerSb.Write("\r\n");
+	if (!headerSb.WriteFormat("Content-Length: %d\r\n", dataSize))
+		return RET_ERR(false, E_UNKNOWN);
+	for (auto it = header.begin(); it != header.end(); it++) {
+		headerSb.Write(it->first.c_str());
+		headerSb.Write(": ");
+		headerSb.Write(it->second.c_str());
+		headerSb.Write("\r\n");
+	}
+	headerSb.Write("\r\n");
+	DEBUG_PRINTLN("=== header");
+	DEBUG_PRINTLN(headerSb.GetString());
+	DEBUG_PRINTLN("===");
     
-    StringBuilder headerSb;
-    headerSb.Write("POST ");
-    if (uriLength <= 0) {
-        headerSb.Write("/");
-    } else {
-        headerSb.Write(uri, uriLength);
-    }
-    headerSb.Write(" HTTP/1.1\r\n");
-    headerSb.Write("Host: ");
-    headerSb.Write(host, hostLength);
-    headerSb.Write("\r\n");
-    if (!headerSb.WriteFormat("Content-Length: %d\r\n", dataSize))
-        return RET_ERR(false, E_UNKNOWN);
-    for (auto it = header.begin(); it != header.end(); it++) {
-        headerSb.Write(it->first.c_str());
-        headerSb.Write(": ");
-        headerSb.Write(it->second.c_str());
-        headerSb.Write("\r\n");
-    }
-    headerSb.Write("\r\n");
-    DEBUG_PRINTLN("=== header");
-    DEBUG_PRINTLN(headerSb.GetString());
-    DEBUG_PRINTLN("===");
+	StringBuilder str;
+	if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + dataSize))
+		return RET_ERR(false, E_UNKNOWN);
+	_AtSerial.WriteCommand(str.GetString());
+	if (!_AtSerial.ReadResponse("^CONNECT$", 60000, NULL))
+		return RET_ERR(false, E_UNKNOWN);
+	const char *headerStr = headerSb.GetString();
+	_AtSerial.WriteBinary((const byte *) headerStr, strlen(headerStr));
+	_AtSerial.WriteBinary((const byte *) data, dataSize);
+	if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
+		return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.ReadResponse("^\\+QHTTPPOST: (.*)$", 60000, &response))
+		return RET_ERR(false, E_UNKNOWN);
+	parser.Parse(response.c_str());
+	if (parser.Size() < 1)
+		return RET_ERR(false, E_UNKNOWN);
+	if (strcmp(parser[0], "0") != 0)
+		return RET_ERR(false, E_UNKNOWN);
+	if (parser.Size() < 2) {
+		*responseCode = -1;
+	} else {
+		*responseCode = atoi(parser[1]);
+	}
     
-    StringBuilder str;
-    if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + dataSize))
-        return RET_ERR(false, E_UNKNOWN);
-    _AtSerial.WriteCommand(str.GetString());
-    if (!_AtSerial.ReadResponse("^CONNECT$", 60000, NULL))
-        return RET_ERR(false, E_UNKNOWN);
-    const char *headerStr = headerSb.GetString();
-    _AtSerial.WriteBinary((const byte *) headerStr, strlen(headerStr));
-    _AtSerial.WriteBinary((const byte *) data, dataSize);
-    if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
-        return RET_ERR(false, E_UNKNOWN);
-    if (!_AtSerial.ReadResponse("^\\+QHTTPPOST: (.*)$", 60000, &response))
-        return RET_ERR(false, E_UNKNOWN);
-    parser.Parse(response.c_str());
-    if (parser.Size() < 1)
-        return RET_ERR(false, E_UNKNOWN);
-    if (strcmp(parser[0], "0") != 0)
-        return RET_ERR(false, E_UNKNOWN);
-    if (parser.Size() < 2) {
-        *responseCode = -1;
-    } else {
-        *responseCode = atoi(parser[1]);
-    }
-    
-    return RET_OK(true);
+	return RET_OK(true);
 }
 
 bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseCode, char *recvData, int recvDataSize) {
-    constexpr char HTTP_CONTENT_TYPE[] = "application/octet-stream";
+	constexpr char HTTP_CONTENT_TYPE[] = "application/octet-stream";
 
-    NectisCellularHttpHeader header;
-    header["Accept"] = "*/*";
-    header["User-Agent"] = HTTP_USER_AGENT;
-    header["Connection"] = "Keep-Alive";
-    header["Content-Type"] = HTTP_CONTENT_TYPE;
-    
-    return HttpPost2(url, data, responseCode, recvData, recvDataSize, header);
+	NectisCellularHttpHeader header;
+	header["Accept"] = "*/*";
+	header["User-Agent"] = HTTP_USER_AGENT;
+	header["Connection"] = "Keep-Alive";
+	header["Content-Type"] = HTTP_CONTENT_TYPE;
+	
+	return HttpPost2(url, data, responseCode, recvData, recvDataSize, header);
 }
 
 bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseCode, char *recvData, int recvDataSize,const NectisCellularHttpHeader &header) {
-    std::string response;
-    ArgumentParser parser;
+	std::string response;
+	ArgumentParser parser;
     
-    if (strncmp(url, "https:", 6) == 0) {
-        if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"sslctxid\",1", "^OK$", 500, NULL))
-            return RET_ERR(false, E_UNKNOWN);
-        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL))
-            return RET_ERR(false, E_UNKNOWN);
+	if (strncmp(url, "https:", 6) == 0) {
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"sslctxid\",1", "^OK$", 500, NULL))
+			return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL))
+			return RET_ERR(false, E_UNKNOWN);
 #if defined ARDUINO_WIO_3G
-        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 #elif defined ARDUINO_NECTIS
-        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 #endif
-        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL))
-            return RET_ERR(false, E_UNKNOWN);
-    }
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL))
+			return RET_ERR(false, E_UNKNOWN);
+	}
     
-    if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"requestheader\",1", "^OK$", 500, NULL))
-        return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"requestheader\",1", "^OK$", 500, NULL))
+		return RET_ERR(false, E_UNKNOWN);
+	
+	if (!HttpSetUrl(url))
+		return RET_ERR(false, E_UNKNOWN);
     
-    if (!HttpSetUrl(url))
-        return RET_ERR(false, E_UNKNOWN);
+	const char *host;
+	int hostLength;
+	const char *uri;
+	int uriLength;
+	if (!SplitUrl(url, &host, &hostLength, &uri, &uriLength))
+		return RET_ERR(false, E_UNKNOWN);
     
-    const char *host;
-    int hostLength;
-    const char *uri;
-    int uriLength;
-    if (!SplitUrl(url, &host, &hostLength, &uri, &uriLength))
-        return RET_ERR(false, E_UNKNOWN);
+	StringBuilder headerSb;
+	headerSb.Write("POST ");
+	if (uriLength <= 0) {
+		headerSb.Write("/");
+	} else {
+		headerSb.Write(uri, uriLength);
+	}
+	headerSb.Write(" HTTP/1.1\r\n");
+	headerSb.Write("Host: ");
+	headerSb.Write(host, hostLength);
+	headerSb.Write("\r\n");
+	if (!headerSb.WriteFormat("Content-Length: %d\r\n", recvDataSize))
+		return RET_ERR(false, E_UNKNOWN);
+	for (auto it = header.begin(); it != header.end(); it++) {
+		headerSb.Write(it->first.c_str());
+		headerSb.Write(": ");
+		headerSb.Write(it->second.c_str());
+		headerSb.Write("\r\n");
+	}
+	headerSb.Write("\r\n");
+	DEBUG_PRINTLN("=== header");
+	DEBUG_PRINTLN(headerSb.GetString());
+	DEBUG_PRINTLN("===");
     
-    StringBuilder headerSb;
-    headerSb.Write("POST ");
-    if (uriLength <= 0) {
-        headerSb.Write("/");
-    } else {
-        headerSb.Write(uri, uriLength);
-    }
-    headerSb.Write(" HTTP/1.1\r\n");
-    headerSb.Write("Host: ");
-    headerSb.Write(host, hostLength);
-    headerSb.Write("\r\n");
-    if (!headerSb.WriteFormat("Content-Length: %d\r\n", recvDataSize))
-        return RET_ERR(false, E_UNKNOWN);
-    for (auto it = header.begin(); it != header.end(); it++) {
-        headerSb.Write(it->first.c_str());
-        headerSb.Write(": ");
-        headerSb.Write(it->second.c_str());
-        headerSb.Write("\r\n");
-    }
-    headerSb.Write("\r\n");
-    DEBUG_PRINTLN("=== header");
-    DEBUG_PRINTLN(headerSb.GetString());
-    DEBUG_PRINTLN("===");
+	StringBuilder str;
+	if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + recvDataSize))
+		return RET_ERR(false, E_UNKNOWN);
+	_AtSerial.WriteCommand(str.GetString());
+	if (!_AtSerial.ReadResponse("^CONNECT$", 60000, NULL))
+		return RET_ERR(false, E_UNKNOWN);
+	const char *headerStr = headerSb.GetString();
+	_AtSerial.WriteBinary((const byte *) headerStr, strlen(headerStr));
+	_AtSerial.WriteBinary((const byte *) data, recvDataSize);
+	if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
+		return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.ReadResponse("^\\+QHTTPPOST: (.*)$", 60000, &response))
+		return RET_ERR(false, E_UNKNOWN);
+	parser.Parse(response.c_str());
+	if (parser.Size() < 1)
+		return RET_ERR(false, E_UNKNOWN);
+	if (strcmp(parser[0], "0") != 0)
+		return RET_ERR(false, E_UNKNOWN);
+	if (parser.Size() < 2) {
+		*responseCode = -1;
+	} else {
+		*responseCode = atoi(parser[1]);
+	}
     
-    StringBuilder str;
-    if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + recvDataSize))
-        return RET_ERR(false, E_UNKNOWN);
-    _AtSerial.WriteCommand(str.GetString());
-    if (!_AtSerial.ReadResponse("^CONNECT$", 60000, NULL))
-        return RET_ERR(false, E_UNKNOWN);
-    const char *headerStr = headerSb.GetString();
-    _AtSerial.WriteBinary((const byte *) headerStr, strlen(headerStr));
-    _AtSerial.WriteBinary((const byte *) data, recvDataSize);
-    if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
-        return RET_ERR(false, E_UNKNOWN);
-    if (!_AtSerial.ReadResponse("^\\+QHTTPPOST: (.*)$", 60000, &response))
-        return RET_ERR(false, E_UNKNOWN);
-    parser.Parse(response.c_str());
-    if (parser.Size() < 1)
-        return RET_ERR(false, E_UNKNOWN);
-    if (strcmp(parser[0], "0") != 0)
-        return RET_ERR(false, E_UNKNOWN);
-    if (parser.Size() < 2) {
-        *responseCode = -1;
-    } else {
-        *responseCode = atoi(parser[1]);
-    }
-    
-    if(parser.Size() == 3) {
-        int contentLength = atoi(parser[2]);
+	if(parser.Size() == 3) {
+		int contentLength = atoi(parser[2]);
 
-        Serial.print("contentLength=");
-        Serial.print(contentLength);
-        Serial.println("");
+		Serial.print("contentLength=");
+		Serial.print(contentLength);
+		Serial.println("");
 
-        if(contentLength > 0)
-        {
-            if((contentLength + 1) < recvDataSize) {
-                _AtSerial.WriteCommand("AT+QHTTPREAD");
-                if (!_AtSerial.ReadResponse("^CONNECT$", 1000, NULL))
-                    return RET_ERR(-1, E_UNKNOWN);
-                if (!_AtSerial.ReadBinary((byte *) recvData, contentLength, 60000))
-                    return RET_ERR(-1, E_UNKNOWN);
-                recvData[contentLength] = '\0';
+		if(contentLength > 0)
+		{
+			if((contentLength + 1) < recvDataSize) {
+				_AtSerial.WriteCommand("AT+QHTTPREAD");
+				if (!_AtSerial.ReadResponse("^CONNECT$", 1000, NULL))
+					return RET_ERR(-1, E_UNKNOWN);
+				if (!_AtSerial.ReadBinary((byte *) recvData, contentLength, 60000))
+					return RET_ERR(-1, E_UNKNOWN);
+				recvData[contentLength] = '\0';
 
-                if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
-                    return RET_ERR(-1, E_UNKNOWN);
-            }
-        }
-        else
-        {
-            return RET_ERR(-1, E_UNKNOWN);
-        }
-    }
+				if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
+					return RET_ERR(-1, E_UNKNOWN);
+			}
+		}
+		else
+		{
+			return RET_ERR(-1, E_UNKNOWN);
+		}
+	}
     
-    return RET_OK(true);
+	return RET_OK(true);
 }
 
 
 void NectisCellular::PostDataViaTcp(byte *post_data, int data_size) {
-    Serial.println("### Post BINARY/TCP.");
-    
-    constexpr char HTTP_CONTENT_TYPE[] = "application/octet-stream";
+	Serial.println("### Post BINARY/TCP.");
+	
+	constexpr char HTTP_CONTENT_TYPE[] = "application/octet-stream";
 
-    NectisCellularHttpHeader header;
-    header["Accept"] = "*/*";
-    header["User-Agent"] = HTTP_USER_AGENT;
-    header["Connection"] = "Keep-Alive";
-    header["Content-Type"] = HTTP_CONTENT_TYPE;
+	NectisCellularHttpHeader header;
+	header["Accept"] = "*/*";
+	header["User-Agent"] = HTTP_USER_AGENT;
+	header["Connection"] = "Keep-Alive";
+	header["Content-Type"] = HTTP_CONTENT_TYPE;
     
-    int status;
-    if (!HttpPost(ENDPOINT_URL, post_data, (const int)data_size, &status, header)) {
-        Serial.println("### ERROR! ###");
-        goto err;
-    }
-    Serial.print("Status=");
-    Serial.println(status);
+	int status;
+	if (!HttpPost(ENDPOINT_URL, post_data, (const int)data_size, &status, header)) {
+		Serial.println("### ERROR! ###");
+		goto err;
+	}
+	Serial.print("Status=");
+	Serial.println(status);
 
 err:
-    Serial.println("### Wait.");
-    delay(INTERVAL);
+	Serial.println("### Wait.");
+	delay(INTERVAL);
 }
 
 void NectisCellular::PostDataViaTcp(char *post_data, int data_size) {
-    Serial.println("### Post JSON/TCP.");
-    
-    constexpr char HTTP_CONTENT_TYPE[] = "application/json";
+	Serial.println("### Post JSON/TCP.");
+	
+	constexpr char HTTP_CONTENT_TYPE[] = "application/json";
 
-    NectisCellularHttpHeader header;
-    header["Accept"] = "*/*";
-    header["User-Agent"] = HTTP_USER_AGENT;
-    header["Connection"] = "Keep-Alive";
-    header["Content-Type"] = HTTP_CONTENT_TYPE;
-    
-    int status;
-    if (!HttpPost(ENDPOINT_URL, post_data, (const int)data_size, &status, header)) {
-        Serial.println("### ERROR! ###");
-        goto err;
-    }
-    Serial.print("Status=");
-    Serial.println(status);
+	NectisCellularHttpHeader header;
+	header["Accept"] = "*/*";
+	header["User-Agent"] = HTTP_USER_AGENT;
+	header["Connection"] = "Keep-Alive";
+	header["Content-Type"] = HTTP_CONTENT_TYPE;
+	
+	int status;
+	if (!HttpPost(ENDPOINT_URL, post_data, (const int)data_size, &status, header)) {
+		Serial.println("### ERROR! ###");
+		goto err;
+	}
+	Serial.print("Status=");
+	Serial.println(status);
 
 err:
-    Serial.println("### Wait.");
-    delay(INTERVAL);
+	Serial.println("### Wait.");
+	delay(INTERVAL);
 }
 
 void NectisCellular::PostDataViaUdp(byte *post_data, int data_size) {
-    Serial.println("### Open Socket.");
+	Serial.println("### Open Socket.");
 
-    int connectId;
-    connectId = SocketOpen("uni.soracom.io", 23080, NECTIS_UDP);
-    if (connectId < 0) {
-        Serial.println("### ERROR! ###");
-        goto err;
-    }
+	int connectId;
+	connectId = SocketOpen("uni.soracom.io", 23080, NECTIS_UDP);
+	if (connectId < 0) {
+		Serial.println("### ERROR! ###");
+		goto err;
+	}
+	
+	Serial.println("### Send BINARY/UDP.");
+	if (!SocketSend(connectId, post_data, data_size)) {
+		Serial.println("### ERROR! ###");
+		goto err_close;
+	}
     
-    Serial.println("### Send BINARY/UDP.");
-    if (!SocketSend(connectId, post_data, data_size)) {
-        Serial.println("### ERROR! ###");
-        goto err_close;
-    }
-    
-    Serial.println("### Receive.");
-    int length;
-    length = SocketReceive(connectId, post_data, data_size, RECEIVE_TIMEOUT);
-    if (length < 0) {
-        Serial.println("### ERROR! ###");
-        Serial.println(length);
-        goto err_close;
-    }
-    if (length == 0) {
-        Serial.println("### RECEIVE TIMEOUT! ###");
-        goto err_close;
-    }
-    Serial.print("Receive=");
-    Serial.print((char *)post_data);
-    Serial.println("");
+	Serial.println("### Receive.");
+	int length;
+	length = SocketReceive(connectId, post_data, data_size, RECEIVE_TIMEOUT);
+	if (length < 0) {
+		Serial.println("### ERROR! ###");
+		Serial.println(length);
+		goto err_close;
+	}
+	if (length == 0) {
+		Serial.println("### RECEIVE TIMEOUT! ###");
+		goto err_close;
+	}
+	Serial.print("Receive=");
+	Serial.print((char *)post_data);
+	Serial.println("");
 
 err_close:
-    Serial.println("### Close.\n");
-    if (!SocketClose(connectId)) {
-        Serial.println("### ERROR! ###");
-        goto err;
-    }
+	Serial.println("### Close.\n");
+	if (!SocketClose(connectId)) {
+		Serial.println("### ERROR! ###");
+		goto err;
+	}
 
 err:
-    delay(INTERVAL);
+	delay(INTERVAL);
 }
 
 void NectisCellular::PostDataViaUdp(char *post_data, int data_size) {
-    Serial.println("### Open Socket.");
+	Serial.println("### Open Socket.");
 
-    int connectId;
-    connectId = SocketOpen("uni.soracom.io", 23080, NECTIS_UDP);
-    if (connectId < 0) {
-        Serial.println("### ERROR! ###");
-        goto err;
-    }
+	int connectId;
+	connectId = SocketOpen("uni.soracom.io", 23080, NECTIS_UDP);
+	if (connectId < 0) {
+		Serial.println("### ERROR! ###");
+		goto err;
+	}
+	
+	Serial.println("### Send JSON/UDP.");
+	if (!SocketSend(connectId, post_data)) {
+		Serial.println("### ERROR! ###");
+		goto err_close;
+	}
     
-    Serial.println("### Send JSON/UDP.");
-    if (!SocketSend(connectId, post_data)) {
-        Serial.println("### ERROR! ###");
-        goto err_close;
-    }
-    
-    Serial.println("### Receive.");
-    int length;
-    length = SocketReceive(connectId, post_data, data_size, RECEIVE_TIMEOUT);
-    if (length < 0) {
-        Serial.println("### ERROR! ###");
-        Serial.println(length);
-        goto err_close;
-    }
-    if (length == 0) {
-        Serial.println("### RECEIVE TIMEOUT! ###");
-        goto err_close;
-    }
-    Serial.print("Receive=");
-    Serial.print(post_data);
-    Serial.println("");
+	Serial.println("### Receive.");
+	int length;
+	length = SocketReceive(connectId, post_data, data_size, RECEIVE_TIMEOUT);
+	if (length < 0) {
+		Serial.println("### ERROR! ###");
+		Serial.println(length);
+		goto err_close;
+	}
+	if (length == 0) {
+		Serial.println("### RECEIVE TIMEOUT! ###");
+		goto err_close;
+	}
+	Serial.print("Receive=");
+	Serial.print(post_data);
+	Serial.println("");
 
 err_close:
-    Serial.println("### Close.\n");
-    if (!SocketClose(connectId)) {
-        Serial.println("### ERROR! ###");
-        goto err;
-    }
+	Serial.println("### Close.\n");
+	if (!SocketClose(connectId)) {
+		Serial.println("### ERROR! ###");
+		goto err;
+	}
 
 err:
-    delay(INTERVAL);
+	delay(INTERVAL);
 }
