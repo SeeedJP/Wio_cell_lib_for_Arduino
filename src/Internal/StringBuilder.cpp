@@ -1,4 +1,4 @@
-#include "../WioCellularConfig.h"
+#include "../NectisCellularConfig.h"
 #include "StringBuilder.h"
 
 #include <stdio.h>

@@ -1,5 +1,5 @@
-#include "WioCellularConfig.h"
-#include "WioCellularClient.h"
+#include "NectisCellularConfig.h"
+#include "NectisCellularClient.h"
 
 #define RECEIVE_MAX_LENGTH	(1500)
 
@@ -9,19 +9,19 @@
 #define CONNECT_TRUNCATED			(-3)
 #define CONNECT_INVALID_RESPONSE	(-4)
 
-WioCellularClient::WioCellularClient(WioCellular* wio)
+NectisCellularClient::NectisCellularClient(NectisCellular* Nectis)
 {
-	_Wio = wio;
+	_Nectis = Nectis;
 	_ConnectId = -1;
 	_ReceiveBuffer = new byte[RECEIVE_MAX_LENGTH];
 }
 
-WioCellularClient::~WioCellularClient()
+NectisCellularClient::~NectisCellularClient()
 {
 	delete [] _ReceiveBuffer;
 }
 
-int WioCellularClient::connect(IPAddress ip, uint16_t port)
+int NectisCellularClient::connect(IPAddress ip, uint16_t port)
 {
 	if (connected()) return CONNECT_INVALID_RESPONSE;	// Already connected.
 
@@ -32,53 +32,53 @@ int WioCellularClient::connect(IPAddress ip, uint16_t port)
 	ipStr += String(ip[2]);
 	ipStr += ".";
 	ipStr += String(ip[3]);
-	int connectId = _Wio->SocketOpen(ipStr.c_str(), port, WioCellular::SOCKET_TCP);
+	int connectId = _Nectis->SocketOpen(ipStr.c_str(), port, NectisCellular::SOCKET_TCP);
 	if (connectId < 0) return CONNECT_INVALID_SERVER;
 	_ConnectId = connectId;
 
 	return CONNECT_SUCCESS;
 }
 
-int WioCellularClient::connect(const char* host, uint16_t port)
+int NectisCellularClient::connect(const char* host, uint16_t port)
 {
 	if (connected()) return CONNECT_INVALID_RESPONSE;	// Already connected.
 
-	int connectId = _Wio->SocketOpen(host, port, WioCellular::SOCKET_TCP);
+	int connectId = _Nectis->SocketOpen(host, port, NectisCellular::SOCKET_TCP);
 	if (connectId < 0) return CONNECT_INVALID_SERVER;
 	_ConnectId = connectId;
 
 	return CONNECT_SUCCESS;
 }
 
-size_t WioCellularClient::write(uint8_t data)
+size_t NectisCellularClient::write(uint8_t data)
 {
 	if (!connected()) return 0;
 
-	if (!_Wio->SocketSend(_ConnectId, &data, 1)) return 0;
+	if (!_Nectis->SocketSend(_ConnectId, &data, 1)) return 0;
 
 	return 1;
 }
 
-size_t WioCellularClient::write(const uint8_t* buf, size_t size)
+size_t NectisCellularClient::write(const uint8_t* buf, size_t size)
 {
 	if (!connected()) return 0;
 
-	if (!_Wio->SocketSend(_ConnectId, buf, size)) return 0;
+	if (!_Nectis->SocketSend(_ConnectId, buf, size)) return 0;
 
 	return size;
 }
 
-int WioCellularClient::available()
+int NectisCellularClient::available()
 {
 	if (!connected()) return 0;
 
-	int receiveSize = _Wio->SocketReceive(_ConnectId, _ReceiveBuffer, RECEIVE_MAX_LENGTH);
+	int receiveSize = _Nectis->SocketReceive(_ConnectId, _ReceiveBuffer, RECEIVE_MAX_LENGTH);
 	for (int i = 0; i < receiveSize; i++) _ReceiveQueue.push(_ReceiveBuffer[i]);
 
 	return _ReceiveQueue.size();
 }
 
-int WioCellularClient::read()
+int NectisCellularClient::read()
 {
 	if (!connected()) return -1;
 
@@ -91,7 +91,7 @@ int WioCellularClient::read()
 	return data;
 }
 
-int WioCellularClient::read(uint8_t* buf, size_t size)
+int NectisCellularClient::read(uint8_t* buf, size_t size)
 {
 	if (!connected()) return 0;
 
@@ -107,7 +107,7 @@ int WioCellularClient::read(uint8_t* buf, size_t size)
 	return popSize;
 }
 
-int WioCellularClient::peek()
+int NectisCellularClient::peek()
 {
 	if (!connected()) return 0;
 
@@ -117,26 +117,26 @@ int WioCellularClient::peek()
 	return _ReceiveQueue.front();
 }
 
-void WioCellularClient::flush()
+void NectisCellularClient::flush()
 {
 	// Nothing to do.
 }
 
-void WioCellularClient::stop()
+void NectisCellularClient::stop()
 {
 	if (!connected()) return;
 
-	_Wio->SocketClose(_ConnectId);
+	_Nectis->SocketClose(_ConnectId);
 	_ConnectId = -1;
 	while (!_ReceiveQueue.empty()) _ReceiveQueue.pop();
 }
 
-uint8_t WioCellularClient::connected()
+uint8_t NectisCellularClient::connected()
 {
 	return _ConnectId >= 0 ? true : false;
 }
 
-WioCellularClient::operator bool()
+NectisCellularClient::operator bool()
 {
 	return _ConnectId >= 0 ? true : false;
 }

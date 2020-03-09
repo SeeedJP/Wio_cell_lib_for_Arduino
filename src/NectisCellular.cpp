@@ -1,23 +1,24 @@
-#include "WioCellularConfig.h"
-#include "WioCellular.h"
+#include "NectisCellularConfig.h"
+#include "NectisCellular.h"
 
 #include "Internal/Debug.h"
 #include "Internal/StringBuilder.h"
 #include "Internal/ArgumentParser.h"
-#include "WioCellularHardware.h"
+#include "NectisCellularHardware.h"
 #include <string.h>
 #include <limits.h>
 
-#include <stm32f4xx_hal.h>
-
-#define RET_OK(val)					(ReturnOk(val))
+#define RET_OK(val)						(ReturnOk(val))
 #define RET_ERR(val,err)			(ReturnError(__LINE__, val, err))
 
+#define INTERVAL              (2500)
+#define RECEIVE_TIMEOUT       (5000)
 #define CONNECT_ID_NUM				(12)
 #define POLLING_INTERVAL			(100)
 
 #define HTTP_USER_AGENT				"QUECTEL_MODULE"
-#define HTTP_CONTENT_TYPE			"application/json"
+
+#define ENDPOINT_URL          "http://unified.soracom.io"		// ENDPOINT_URL は固定しているが、SORACOM以外にも送信する必要があれば、引数として受け取るように変更。
 
 #define LINEAR_SCALE(val, inMin, inMax, outMin, outMax)	(((val) - (inMin)) / ((inMax) - (inMin)) * ((outMax) - (outMin)) + (outMin))
 
@@ -50,7 +51,7 @@ static bool SplitUrl(const char* url, const char** host, int* hostLength, const 
 ////////////////////////////////////////////////////////////////////////////////////////
 // WioCellular
 
-bool WioCellular::ReturnError(int lineNumber, bool value, WioCellular::ErrorCodeType errorCode)
+bool NectisCellular::ReturnError(int lineNumber, bool value, NectisCellular::ErrorCodeType errorCode)
 {
 	_LastErrorCode = errorCode;
 
@@ -62,7 +63,7 @@ bool WioCellular::ReturnError(int lineNumber, bool value, WioCellular::ErrorCode
 	return value;
 }
 
-int WioCellular::ReturnError(int lineNumber, int value, WioCellular::ErrorCodeType errorCode)
+int NectisCellular::ReturnError(int lineNumber, int value, NectisCellular::ErrorCodeType errorCode)
 {
 	_LastErrorCode = errorCode;
 
@@ -74,37 +75,37 @@ int WioCellular::ReturnError(int lineNumber, int value, WioCellular::ErrorCodeTy
 	return value;
 }
 
-bool WioCellular::IsBusy() const
+bool NectisCellular::IsBusy() const
 {
 	return digitalRead(MODULE_STATUS_PIN) ? false : true;
 }
 
-bool WioCellular::IsRespond()
+bool NectisCellular::IsRespond()
 {
-#ifndef ARDUINO_ARCH_STM32
-	auto writeTimeout = SerialModule.getWriteTimeout();
-	SerialModule.setWriteTimeout(10);
-#endif // ARDUINO_ARCH_STM32
+#ifndef ARDUINO_ARCH_NRF52
+	auto writeTimeout = Serial1.getWriteTimeout();
+	Serial1.setWriteTimeout(10);
+#endif // ARDUINO_ARCH_NRF52
 
 	Stopwatch sw;
 	sw.Restart();
 	while (!_AtSerial.WriteCommandAndReadResponse("AT", "^OK$", 500, NULL)) {
 		if (sw.ElapsedMilliseconds() >= 2000)
 		{
-#ifndef ARDUINO_ARCH_STM32
-			SerialModule.setWriteTimeout(writeTimeout);
-#endif // ARDUINO_ARCH_STM32
+#ifndef ARDUINO_ARCH_NRF52
+			Serial1.setWriteTimeout(writeTimeout);
+#endif // ARDUINO_ARCH_NRF52
 			return false;
 		}
 	}
 
-#ifndef ARDUINO_ARCH_STM32
-	SerialModule.setWriteTimeout(writeTimeout);
-#endif // ARDUINO_ARCH_STM32
+#ifndef ARDUINO_ARCH_NRF52
+	Serial1.setWriteTimeout(writeTimeout);
+#endif // ARDUINO_ARCH_NRF52
 	return true;
 }
 
-bool WioCellular::Reset()
+bool NectisCellular::Reset()
 {
 	digitalWrite(MODULE_RESET_PIN, HIGH);
 	delay(200);
@@ -114,7 +115,7 @@ bool WioCellular::Reset()
 	return true;
 }
 
-bool WioCellular::TurnOn()
+bool NectisCellular::TurnOn()
 {
 	delay(100);
 	digitalWrite(MODULE_PWRKEY_PIN, HIGH);
@@ -124,7 +125,7 @@ bool WioCellular::TurnOn()
 	return true;
 }
 
-bool WioCellular::HttpSetUrl(const char* url)
+bool NectisCellular::HttpSetUrl(const char* url)
 {
 	StringBuilder str;
 	if (!str.WriteFormat("AT+QHTTPURL=%d", strlen(url))) return false;
@@ -137,21 +138,21 @@ bool WioCellular::HttpSetUrl(const char* url)
 	return true;
 }
 
-//bool WioCellular::ReadResponseCallback(const char* response)
+//bool NectisCellular::ReadResponseCallback(const char* response)
 //{
 //	return false;
 //}
 
-WioCellular::WioCellular() : _SerialAPI(&SerialModule), _AtSerial(&_SerialAPI, this), _Led(), _AccessTechnology(ACCESS_TECHNOLOGY_NONE), _SelectNetworkMode(SELECT_NETWORK_MODE_NONE)
+NectisCellular::NectisCellular() : _SerialAPI(&Serial1), _AtSerial(&_SerialAPI, this), _AccessTechnology(ACCESS_TECHNOLOGY_NONE), _SelectNetworkMode(SELECT_NETWORK_MODE_NONE)
 {
 }
 
-WioCellular::ErrorCodeType WioCellular::GetLastError() const
+NectisCellular::ErrorCodeType NectisCellular::GetLastError() const
 {
 	return _LastErrorCode;
 }
 
-void WioCellular::Init()
+void NectisCellular::Init()
 {
 	////////////////////
 	// Module
@@ -166,17 +167,18 @@ void WioCellular::Init()
 	// Main UART Interface
 	pinMode(MODULE_DTR_PIN, OUTPUT); digitalWrite(MODULE_DTR_PIN, LOW);
 
-#ifndef ARDUINO_ARCH_STM32
-	SerialModule.setReadBufferSize(100);
-	SerialModule.setWriteTimeout(0xffffffff);	// HAL_MAX_DELAY
-#endif // ARDUINO_ARCH_STM32
-	SerialModule.begin(115200);
+#ifndef ARDUINO_ARCH_NRF52
+	Serial1.setReadBufferSize(100);
+	Serial1.setWriteTimeout(0xffffffff);	// HAL_MAX_DELAY
+#endif // ARDUINO_ARCH_NRF52
+
+	Serial1.begin(115200);
 
 	////////////////////
 	// Led
 
-	pinMode(LED_VDD_PIN, OUTPUT); digitalWrite(LED_VDD_PIN, LOW);
-	pinMode(LED_PIN, OUTPUT); digitalWrite(LED_PIN, HIGH);
+	pinMode(LED_BUILTIN, OUTPUT); digitalWrite(LED_BUILTIN, HIGH);
+	pinMode(LED_CONN, OUTPUT); digitalWrite(LED_CONN, LOW);
 
 	////////////////////
 	// Grove
@@ -186,36 +188,20 @@ void WioCellular::Init()
 	////////////////////
 	// SD
 
-	pinMode(SD_POWR_PIN, OUTPUT); digitalWrite(SD_POWR_PIN, LOW);
+	// pinMode(SD_POWR_PIN, OUTPUT); digitalWrite(SD_POWR_PIN, LOW);
 }
 
-void WioCellular::PowerSupplyCellular(bool on)
+void NectisCellular::PowerSupplyCellular(bool on)
 {
 	digitalWrite(MODULE_PWR_PIN, on ? HIGH : LOW);
 }
 
-void WioCellular::PowerSupplyLed(bool on)
-{
-	digitalWrite(LED_VDD_PIN, on ? HIGH : LOW);
-}
-
-void WioCellular::PowerSupplyGrove(bool on)
+void NectisCellular::PowerSupplyGrove(bool on)
 {
 	digitalWrite(GROVE_VCCB_PIN, on ? HIGH : LOW);
 }
 
-void WioCellular::PowerSupplySD(bool on)
-{
-	digitalWrite(SD_POWR_PIN, on ? HIGH : LOW);
-}
-
-void WioCellular::LedSetRGB(uint8_t red, uint8_t green, uint8_t blue)
-{
-	_Led.Reset();
-	_Led.SetSingleLED(red, green, blue);
-}
-
-bool WioCellular::TurnOnOrReset()
+bool NectisCellular::TurnOnOrReset()
 {
 	std::string response;
 	ArgumentParser parser;
@@ -239,11 +225,11 @@ bool WioCellular::TurnOnOrReset()
 
 	if (!_AtSerial.WriteCommandAndReadResponse("ATE0", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 	_AtSerial.SetEcho(false);
-#ifndef ARDUINO_ARCH_STM32
+#ifndef ARDUINO_ARCH_NRF52
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+IFC=2,2", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
-#endif // ARDUINO_ARCH_STM32
+#endif // ARDUINO_ARCH_NRF52
 
-#if defined ARDUINO_WIO_LTE_M1NB1_BG96
+#if defined ARDUINO_NECTIS
 	switch (_AccessTechnology)
 	{
 	case ACCESS_TECHNOLOGY_NONE:
@@ -261,7 +247,7 @@ bool WioCellular::TurnOnOrReset()
 	default:
 		return RET_ERR(false, E_UNKNOWN);
 	}
-#endif // ARDUINO_WIO_LTE_M1NB1_BG96
+#endif // ARDUINO_NECTIS
 
 #if defined ARDUINO_WIO_3G
 	sw.Restart();
@@ -282,8 +268,27 @@ bool WioCellular::TurnOnOrReset()
 		if (sw.ElapsedMilliseconds() >= 10000) return RET_ERR(false, E_UNKNOWN);
 		delay(POLLING_INTERVAL);
 	}
-#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+#elif defined ARDUINO_NECTIS
 	sw.Restart();
+
+	bool cpinReady;
+	while (true) {
+		_AtSerial.WriteCommand("AT+CPIN?");
+		cpinReady = false;
+		while (true) {
+			if (!_AtSerial.ReadResponse("^(OK|\\+CPIN: READY|\\+CME ERROR: .*)$", 500, &response)) return RET_ERR(false, E_UNKNOWN);
+			if (response == "+CPIN: READY") {
+				cpinReady = true;
+				continue;
+			}
+			break;
+		}
+		if (response == "OK" && cpinReady) break;
+
+		if (sw.ElapsedMilliseconds() >= 10000) return RET_ERR(false, E_UNKNOWN);
+		delay(POLLING_INTERVAL);
+	}
+
 	while (true) {
 		int status;
 
@@ -304,7 +309,7 @@ bool WioCellular::TurnOnOrReset()
 	return RET_OK(true);
 }
 
-bool WioCellular::TurnOff()
+bool NectisCellular::TurnOff()
 {
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+QPOWD", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 	if (!_AtSerial.ReadResponse("^POWERED DOWN$", 60000, NULL)) return RET_ERR(false, E_UNKNOWN);
@@ -312,7 +317,7 @@ bool WioCellular::TurnOff()
 	return RET_OK(true);
 }
 
-int WioCellular::GetIMEI(char* imei, int imeiSize)
+int NectisCellular::GetIMEI(char* imei, int imeiSize)
 {
 	std::string response;
 	std::string imeiStr;
@@ -330,7 +335,7 @@ int WioCellular::GetIMEI(char* imei, int imeiSize)
 	return RET_OK((int)strlen(imei));
 }
 
-int WioCellular::GetIMSI(char* imsi, int imsiSize)
+int NectisCellular::GetIMSI(char* imsi, int imsiSize)
 {
 	std::string response;
 	std::string imsiStr;
@@ -348,7 +353,7 @@ int WioCellular::GetIMSI(char* imsi, int imsiSize)
 	return RET_OK((int)strlen(imsi));
 }
 
-int WioCellular::GetICCID(char* iccid, int iccidSize)
+int NectisCellular::GetICCID(char* iccid, int iccidSize)
 {
 	std::string response;
 
@@ -363,7 +368,7 @@ int WioCellular::GetICCID(char* iccid, int iccidSize)
 	return RET_OK((int)strlen(iccid));
 }
 
-int WioCellular::GetPhoneNumber(char* number, int numberSize)
+int NectisCellular::GetPhoneNumber(char* number, int numberSize)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -387,7 +392,7 @@ int WioCellular::GetPhoneNumber(char* number, int numberSize)
 	return RET_OK((int)strlen(number));
 }
 
-int WioCellular::GetReceivedSignalStrength()
+int NectisCellular::GetReceivedSignalStrength()
 {
 	std::string response;
 	ArgumentParser parser;
@@ -410,7 +415,7 @@ int WioCellular::GetReceivedSignalStrength()
 	return RET_OK(-999);
 }
 
-bool WioCellular::GetTime(struct tm* tim)
+bool NectisCellular::GetTime(struct tm* tim)
 {
 	std::string response;
 
@@ -441,7 +446,7 @@ bool WioCellular::GetTime(struct tm* tim)
 	tim->tm_wday = 0;
 	tim->tm_yday = 0;
 	tim->tm_isdst = 0;
-#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+#elif defined ARDUINO_NECTIS
 	if (strlen(response.c_str()) != 26) return RET_ERR(false, E_UNKNOWN);
 	const char* parameter = response.c_str();
 
@@ -471,20 +476,20 @@ bool WioCellular::GetTime(struct tm* tim)
 	return RET_OK(true);
 }
 
-#if defined ARDUINO_WIO_LTE_M1NB1_BG96
-void WioCellular::SetAccessTechnology(AccessTechnologyType technology)
+#if defined ARDUINO_NECTIS
+void NectisCellular::SetAccessTechnology(AccessTechnologyType technology)
 {
 	_AccessTechnology = technology;
 }
-#endif // ARDUINO_WIO_LTE_M1NB1_BG96
+#endif // ARDUINO_NECTIS
 
-void WioCellular::SetSelectNetwork(SelectNetworkModeType mode, const char* plmn)
+void NectisCellular::SetSelectNetwork(SelectNetworkModeType mode, const char* plmn)
 {
 	_SelectNetworkMode = mode;
 	_SelectNetworkPLMN = plmn;
 }
 
-bool WioCellular::WaitForCSRegistration(long timeout)
+bool NectisCellular::WaitForCSRegistration(long timeout)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -511,7 +516,7 @@ bool WioCellular::WaitForCSRegistration(long timeout)
 	return RET_OK(true);
 }
 
-bool WioCellular::WaitForPSRegistration(long timeout)
+bool NectisCellular::WaitForPSRegistration(long timeout)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -535,7 +540,7 @@ bool WioCellular::WaitForPSRegistration(long timeout)
 		if (sw.ElapsedMilliseconds() >= (unsigned long)timeout) return RET_ERR(false, E_UNKNOWN);
 		delay(POLLING_INTERVAL);
 	}
-#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+#elif defined ARDUINO_NECTIS
 	Stopwatch sw;
 	sw.Restart();
 	while (true) {
@@ -559,7 +564,7 @@ bool WioCellular::WaitForPSRegistration(long timeout)
 	return RET_OK(true);
 }
 
-bool WioCellular::Activate(const char* accessPointName, const char* userName, const char* password, long waitForRegistTimeout)
+bool NectisCellular::Activate(const char* accessPointName, const char* userName, const char* password, long waitForRegistTimeout)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -604,17 +609,17 @@ bool WioCellular::Activate(const char* accessPointName, const char* userName, co
 		if (!WaitForPSRegistration(waitForRegistTimeout)) return RET_ERR(false, E_UNKNOWN);
 
 		// for debug.
-#ifdef WIO_DEBUG
+#ifdef CELLULAR_DEBUG
 		char dbg[100];
 		sprintf(dbg, "Elapsed time is %lu[msec.].", sw.ElapsedMilliseconds());
 		DEBUG_PRINTLN(dbg);
 
 		_AtSerial.WriteCommandAndReadResponse("AT+CREG?", "^OK$", 500, NULL);
 		_AtSerial.WriteCommandAndReadResponse("AT+CGREG?", "^OK$", 500, NULL);
-#if defined ARDUINO_WIO_LTE_M1NB1_BG96
+#if defined ARDUINO_NECTIS
 		_AtSerial.WriteCommandAndReadResponse("AT+CEREG?", "^OK$", 500, NULL);
-#endif // ARDUINO_WIO_LTE_M1NB1_BG96
-#endif // WIO_DEBUG
+#endif // ARDUINO_NECTIS
+#endif // CELLULAR_DEBUG
 	}
 
 	sw.Restart();
@@ -628,14 +633,14 @@ bool WioCellular::Activate(const char* accessPointName, const char* userName, co
 	}
 
 	// for debug.
-#ifdef WIO_DEBUG
+#ifdef CELLULAR_DEBUG
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+QIACT?", "^OK$", 150000, NULL)) return RET_ERR(false, E_UNKNOWN);
-#endif // WIO_DEBUG
+#endif // CELLULAR_DEBUG
 
 	return RET_OK(true);
 }
 
-bool WioCellular::Deactivate()
+bool NectisCellular::Deactivate()
 {
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+QIDEACT=1", "^OK$", 40000, NULL)) return RET_ERR(false, E_UNKNOWN);
 	if (!_AtSerial.WriteCommandAndReadResponse("AT+COPS=2", "^OK$", 120000, NULL)) return RET_ERR(false, E_UNKNOWN);
@@ -643,7 +648,7 @@ bool WioCellular::Deactivate()
 	return RET_OK(true);
 }
 
-bool WioCellular::GetDNSAddress(IPAddress* ip1, IPAddress* ip2)
+bool NectisCellular::GetDNSAddress(IPAddress* ip1, IPAddress* ip2)
 {
 	std::string response;
 	std::string ipsStr;
@@ -674,12 +679,12 @@ bool WioCellular::GetDNSAddress(IPAddress* ip1, IPAddress* ip2)
 	return RET_OK(true);
 }
 
-bool WioCellular::SetDNSAddress(const IPAddress& ip1)
+bool NectisCellular::SetDNSAddress(const IPAddress& ip1)
 {
 	return SetDNSAddress(ip1, INADDR_NONE);
 }
 
-bool WioCellular::SetDNSAddress(const IPAddress& ip1, const IPAddress& ip2)
+bool NectisCellular::SetDNSAddress(const IPAddress& ip1, const IPAddress& ip2)
 {
 	StringBuilder str;
 	if (!str.WriteFormat("AT+QIDNSCFG=1,\"%u.%u.%u.%u\",\"%u.%u.%u.%u\"", ip1[0], ip1[1], ip1[2], ip1[3], ip2[0], ip2[1], ip2[2], ip2[3])) return RET_ERR(false, E_UNKNOWN);
@@ -688,7 +693,7 @@ bool WioCellular::SetDNSAddress(const IPAddress& ip1, const IPAddress& ip2)
 	return RET_OK(true);
 }
 
-int WioCellular::SocketOpen(const char* host, int port, SocketType type)
+int NectisCellular::SocketOpen(const char* host, int port, SocketType type)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -740,7 +745,7 @@ int WioCellular::SocketOpen(const char* host, int port, SocketType type)
 	return RET_OK(connectId);
 }
 
-bool WioCellular::SocketSend(int connectId, const byte* data, int dataSize)
+bool NectisCellular::SocketSend(int connectId, const byte* data, int dataSize)
 {
 	if (connectId >= CONNECT_ID_NUM) return RET_ERR(false, E_UNKNOWN);
 	if (dataSize > 1460) return RET_ERR(false, E_UNKNOWN);
@@ -755,12 +760,12 @@ bool WioCellular::SocketSend(int connectId, const byte* data, int dataSize)
 	return RET_OK(true);
 }
 
-bool WioCellular::SocketSend(int connectId, const char* data)
+bool NectisCellular::SocketSend(int connectId, const char* data)
 {
 	return SocketSend(connectId, (const byte*)data, strlen(data));
 }
 
-int WioCellular::SocketReceive(int connectId, byte* data, int dataSize)
+int NectisCellular::SocketReceive(int connectId, byte* data, int dataSize)
 {
 	std::string response;
 
@@ -780,7 +785,7 @@ int WioCellular::SocketReceive(int connectId, byte* data, int dataSize)
 	return RET_OK(dataLength);
 }
 
-int WioCellular::SocketReceive(int connectId, char* data, int dataSize)
+int NectisCellular::SocketReceive(int connectId, char* data, int dataSize)
 {
 	int dataLength = SocketReceive(connectId, (byte*)data, dataSize - 1);
 	if (dataLength >= 0) data[dataLength] = '\0';
@@ -788,7 +793,7 @@ int WioCellular::SocketReceive(int connectId, char* data, int dataSize)
 	return dataLength;
 }
 
-int WioCellular::SocketReceive(int connectId, byte* data, int dataSize, long timeout)
+int NectisCellular::SocketReceive(int connectId, byte* data, int dataSize, long timeout)
 {
 	Stopwatch sw;
 	sw.Restart();
@@ -800,7 +805,7 @@ int WioCellular::SocketReceive(int connectId, byte* data, int dataSize, long tim
 	return dataLength;
 }
 
-int WioCellular::SocketReceive(int connectId, char* data, int dataSize, long timeout)
+int NectisCellular::SocketReceive(int connectId, char* data, int dataSize, long timeout)
 {
 	Stopwatch sw;
 	sw.Restart();
@@ -812,7 +817,7 @@ int WioCellular::SocketReceive(int connectId, char* data, int dataSize, long tim
 	return dataLength;
 }
 
-bool WioCellular::SocketClose(int connectId)
+bool NectisCellular::SocketClose(int connectId)
 {
 	if (connectId >= CONNECT_ID_NUM) return RET_ERR(false, E_UNKNOWN);
 
@@ -823,9 +828,9 @@ bool WioCellular::SocketClose(int connectId)
 	return RET_OK(true);
 }
 
-int WioCellular::HttpGet(const char* url, char* data, int dataSize)
+int NectisCellular::HttpGet(const char* url, char* data, int dataSize)
 {
-	WioCellularHttpHeader header;
+	NectisCellularHttpHeader header;
 	header["Accept"] = "*/*";
 	header["User-Agent"] = HTTP_USER_AGENT;
 	header["Connection"] = "Keep-Alive";
@@ -833,7 +838,7 @@ int WioCellular::HttpGet(const char* url, char* data, int dataSize)
 	return HttpGet(url, data, dataSize, header);
 }
 
-int WioCellular::HttpGet(const char* url, char* data, int dataSize, const WioCellularHttpHeader& header)
+int NectisCellular::HttpGet(const char* url, char* data, int dataSize, const NectisCellularHttpHeader& header)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -843,7 +848,7 @@ int WioCellular::HttpGet(const char* url, char* data, int dataSize, const WioCel
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL)) return RET_ERR(-1, E_UNKNOWN);
 #if defined ARDUINO_WIO_3G
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(-1, E_UNKNOWN);
-#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+#elif defined ARDUINO_NECTIS
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(-1, E_UNKNOWN);
 #endif
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL)) return RET_ERR(-1, E_UNKNOWN);
@@ -914,9 +919,11 @@ int WioCellular::HttpGet(const char* url, char* data, int dataSize, const WioCel
 	return RET_OK(contentLength);
 }
 
-bool WioCellular::HttpPost(const char* url, const char* data, int* responseCode)
+bool NectisCellular::HttpPost(const char* url, const char* data, int* responseCode)
 {
-	WioCellularHttpHeader header;
+	constexpr char HTTP_CONTENT_TYPE[] = "application/json";
+
+  NectisCellularHttpHeader header;
 	header["Accept"] = "*/*";
 	header["User-Agent"] = HTTP_USER_AGENT;
 	header["Connection"] = "Keep-Alive";
@@ -925,7 +932,7 @@ bool WioCellular::HttpPost(const char* url, const char* data, int* responseCode)
 	return HttpPost(url, data, responseCode, header);
 }
 
-bool WioCellular::HttpPost(const char* url, const char* data, int* responseCode, const WioCellularHttpHeader& header)
+bool NectisCellular::HttpPost(const char* url, const char* data, int* responseCode, const NectisCellularHttpHeader& header)
 {
 	std::string response;
 	ArgumentParser parser;
@@ -935,7 +942,7 @@ bool WioCellular::HttpPost(const char* url, const char* data, int* responseCode,
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 #if defined ARDUINO_WIO_3G
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
-#elif defined ARDUINO_WIO_LTE_M1NB1_BG96
+#elif defined ARDUINO_NECTIS
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
 #endif
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
@@ -1004,7 +1011,7 @@ bool WioCellular::HttpPost(const char* url, const char* data, int* responseCode,
   \param out   a pointer to an output buffer to receive response message.
   \param outSize specify allocated size of `out` in bytes.
 */
-bool WioCellular::SendUSSD(const char* in, char* out, int outSize)
+bool NectisCellular::SendUSSD(const char* in, char* out, int outSize)
 {
 	if (in == NULL || out == NULL) {
 		return RET_ERR(false, E_UNKNOWN);
@@ -1033,7 +1040,556 @@ bool WioCellular::SendUSSD(const char* in, char* out, int outSize)
 	return RET_OK(true);
 }
 
-void WioCellular::SystemReset()
+void NectisCellular::SystemReset()
 {
-	HAL_NVIC_SystemReset();
+	NVIC_SystemReset();
+}
+
+
+/*
+ * The functions that have customized for Nectis and should be called from outside the library.
+ * For CAMI qibanca nectis series on nRF52840. 
+ */
+
+void NectisCellular::SoftReset() {
+	SystemReset();
+}
+
+void NectisCellular::Begin() {
+	// Initialize Uart between BL654 and BG96.
+	Serial1.setPins(MODULE_UART_RX_PIN, MODULE_UART_TX_PIN, MODULE_RTS_PIN, MODULE_CTS_PIN);
+	Serial1.begin(115200);
+
+	delay(200);
+}
+
+void NectisCellular::End() {
+	Serial1.end();
+}
+
+void NectisCellular::InitLteM() {
+	constexpr char APN[] = "soracom.io";
+	constexpr char USERNAME[] = "sora";
+	constexpr char PASSWORD[] = "sora";
+
+#ifdef ARDUINO_NECTIS
+	SetAccessTechnology(ACCESS_TECHNOLOGY_LTE_M1);
+	SetSelectNetwork(SELECT_NETWORK_MODE_MANUAL_IMSI);
+#endif
+
+	Serial.println("### Turn on or reset.");
+	if (!TurnOnOrReset()) {
+		Serial.println("### ERROR!; TurnOnOrReset ###");
+		return;
+	}
+
+	delay(100);
+
+	Serial.printf("### Connecting to \"%s\".\n", APN);
+	if (!Activate(APN, USERNAME, PASSWORD)) {
+			Serial.println("### ERROR!; Activate ###");
+			return;
+	}
+}
+
+void NectisCellular::InitNbIoT() {
+	constexpr char APN[] = "mtc.gen";
+	constexpr char USERNAME[] = "mtc";
+	constexpr char PASSWORD[] = "mtc";
+
+#ifdef ARDUINO_NECTIS
+	SetAccessTechnology(ACCESS_TECHNOLOGY_LTE_NB1);
+	SetSelectNetwork(SELECT_NETWORK_MODE_MANUAL_IMSI);
+#endif
+
+	Serial.println("### Turn on or reset.");
+	if (!TurnOnOrReset()) {
+		Serial.println("### ERROR!; TurnOnOrReset ###");
+		return;
+	}
+
+	delay(100);
+
+	Serial.printf("### Connecting to \"%s\".\n", APN);
+	if (!Activate(APN, USERNAME, PASSWORD)) {
+		Serial.println("### ERROR!; Activate ###");
+		return;
+	}
+}
+
+int NectisCellular::GetReceivedSignalStrengthIndicator() {
+    int rssi = GetReceivedSignalStrength();
+    int rssi_count = 0;
+    while (rssi == - 999) {
+        rssi = GetReceivedSignalStrength();
+        if (rssi_count == 10) {
+            SoftReset();
+        }
+        rssi_count++;
+        delay(1000);
+    }
+
+    return rssi;
+}
+
+bool NectisCellular::IsTimeGot(struct tm *tim, bool jst) {
+    std::string response;
+
+    // AT+QLTS=1 -> Acquire UTC
+    // AT+QLTS=2 -> Acquire JST
+    if (jst) {
+      _AtSerial.WriteCommand("AT+QLTS=2");
+    } else {
+      _AtSerial.WriteCommand("AT+QLTS=1");
+    }
+    
+    if (!_AtSerial.ReadResponse("^\\+QLTS: (.*)$", 500, &response)) return RET_ERR(false, E_UNKNOWN);
+    if (!_AtSerial.ReadResponse("^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+    
+    if (strlen(response.c_str()) != 26) return RET_ERR(false, E_UNKNOWN);
+    
+    const char* parameter = response.c_str();
+
+    if (parameter[0] != '"') return RET_ERR(false, E_UNKNOWN);
+    if (parameter[5] != '/') return RET_ERR(false, E_UNKNOWN);
+    if (parameter[8] != '/') return RET_ERR(false, E_UNKNOWN);
+    if (parameter[11] != ',') return RET_ERR(false, E_UNKNOWN);
+    if (parameter[14] != ':') return RET_ERR(false, E_UNKNOWN);
+    if (parameter[17] != ':') return RET_ERR(false, E_UNKNOWN);
+    if (parameter[23] != ',') return RET_ERR(false, E_UNKNOWN);
+    if (parameter[25] != '"') return RET_ERR(false, E_UNKNOWN);
+    
+    tim->tm_year = atoi(&parameter[1]) - 1900;
+    tim->tm_mon = atoi(&parameter[6]) - 1;
+    tim->tm_mday = atoi(&parameter[9]);
+    tim->tm_hour = atoi(&parameter[12]);
+    tim->tm_min = atoi(&parameter[15]);
+    tim->tm_sec = atoi(&parameter[18]);
+    tim->tm_wday = 0;
+    tim->tm_yday = 0;
+    tim->tm_isdst = 0;
+    
+    // Update tm_wday and tm_yday
+    mktime(tim);
+    
+    return RET_OK(true);
+}
+
+void NectisCellular::GetCurrentTime(struct tm *tim, bool jst) {
+    // Get time in JST.
+    while (!IsTimeGot(tim, jst)) {
+        Serial.println("### ERROR! ###");
+        delay(1000);
+    }
+}
+
+
+bool NectisCellular::HttpPost(const char* url, const char* data, const int dataSize, int* responseCode, const NectisCellularHttpHeader& header)
+{
+	std::string response;
+	ArgumentParser parser;
+
+	if (strncmp(url, "https:", 6) == 0) {
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"sslctxid\",1", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#if defined ARDUINO_WIO_3G
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#elif defined ARDUINO_NECTIS
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#endif
+		if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+	}
+
+	if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"requestheader\",1", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+
+	if (!HttpSetUrl(url)) return RET_ERR(false, E_UNKNOWN);
+
+	const char* host;
+	int hostLength;
+	const char* uri;
+	int uriLength;
+	if (!SplitUrl(url, &host, &hostLength, &uri, &uriLength)) return RET_ERR(false, E_UNKNOWN);
+
+	StringBuilder headerSb;
+	headerSb.Write("POST ");
+	if (uriLength <= 0) {
+		headerSb.Write("/");
+	}
+	else {
+		headerSb.Write(uri, uriLength);
+	}
+	headerSb.Write(" HTTP/1.1\r\n");
+	headerSb.Write("Host: ");
+	headerSb.Write(host, hostLength);
+	headerSb.Write("\r\n");
+	if (!headerSb.WriteFormat("Content-Length: %d\r\n", dataSize)) return RET_ERR(false, E_UNKNOWN);
+	for (auto it = header.begin(); it != header.end(); it++) {
+		headerSb.Write(it->first.c_str());
+		headerSb.Write(": ");
+		headerSb.Write(it->second.c_str());
+		headerSb.Write("\r\n");
+	}
+	headerSb.Write("\r\n");
+	DEBUG_PRINTLN("=== header");
+	DEBUG_PRINTLN(headerSb.GetString());
+	DEBUG_PRINTLN("===");
+
+	StringBuilder str;
+	if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + dataSize)) return RET_ERR(false, E_UNKNOWN);
+	_AtSerial.WriteCommand(str.GetString());
+	if (!_AtSerial.ReadResponse("^CONNECT$", 60000, NULL)) return RET_ERR(false, E_UNKNOWN);
+	const char* headerStr = headerSb.GetString();
+	_AtSerial.WriteBinary((const byte*)headerStr, strlen(headerStr));
+	_AtSerial.WriteBinary((const byte*)data, dataSize);
+	if (!_AtSerial.ReadResponse("^OK$", 1000, NULL)) return RET_ERR(false, E_UNKNOWN);
+	if (!_AtSerial.ReadResponse("^\\+QHTTPPOST: (.*)$", 60000, &response)) return RET_ERR(false, E_UNKNOWN);
+	parser.Parse(response.c_str());
+	if (parser.Size() < 1) return RET_ERR(false, E_UNKNOWN);
+	if (strcmp(parser[0], "0") != 0) return RET_ERR(false, E_UNKNOWN);
+	if (parser.Size() < 2) {
+		*responseCode = -1;
+	}
+	else {
+		*responseCode = atoi(parser[1]);
+	}
+
+	return RET_OK(true);
+}
+
+bool NectisCellular::HttpPost(const char *url, const byte *data, const int dataSize, int *responseCode, const NectisCellularHttpHeader &header) {
+    std::string response;
+    ArgumentParser parser;
+    
+    if (strncmp(url, "https:", 6) == 0) {
+        if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"sslctxid\",1", "^OK$", 500, NULL))
+            return RET_ERR(false, E_UNKNOWN);
+        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL))
+            return RET_ERR(false, E_UNKNOWN);
+#if defined ARDUINO_WIO_3G
+        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#elif defined ARDUINO_NECTIS
+        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#endif
+        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL))
+            return RET_ERR(false, E_UNKNOWN);
+    }
+    
+    if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"requestheader\",1", "^OK$", 500, NULL))
+        return RET_ERR(false, E_UNKNOWN);
+    
+    if (!HttpSetUrl(url))
+        return RET_ERR(false, E_UNKNOWN);
+    
+    const char *host;
+    int hostLength;
+    const char *uri;
+    int uriLength;
+    if (!SplitUrl(url, &host, &hostLength, &uri, &uriLength))
+        return RET_ERR(false, E_UNKNOWN);
+    
+    StringBuilder headerSb;
+    headerSb.Write("POST ");
+    if (uriLength <= 0) {
+        headerSb.Write("/");
+    } else {
+        headerSb.Write(uri, uriLength);
+    }
+    headerSb.Write(" HTTP/1.1\r\n");
+    headerSb.Write("Host: ");
+    headerSb.Write(host, hostLength);
+    headerSb.Write("\r\n");
+    if (!headerSb.WriteFormat("Content-Length: %d\r\n", dataSize))
+        return RET_ERR(false, E_UNKNOWN);
+    for (auto it = header.begin(); it != header.end(); it++) {
+        headerSb.Write(it->first.c_str());
+        headerSb.Write(": ");
+        headerSb.Write(it->second.c_str());
+        headerSb.Write("\r\n");
+    }
+    headerSb.Write("\r\n");
+    DEBUG_PRINTLN("=== header");
+    DEBUG_PRINTLN(headerSb.GetString());
+    DEBUG_PRINTLN("===");
+    
+    StringBuilder str;
+    if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + dataSize))
+        return RET_ERR(false, E_UNKNOWN);
+    _AtSerial.WriteCommand(str.GetString());
+    if (!_AtSerial.ReadResponse("^CONNECT$", 60000, NULL))
+        return RET_ERR(false, E_UNKNOWN);
+    const char *headerStr = headerSb.GetString();
+    _AtSerial.WriteBinary((const byte *) headerStr, strlen(headerStr));
+    _AtSerial.WriteBinary((const byte *) data, dataSize);
+    if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
+        return RET_ERR(false, E_UNKNOWN);
+    if (!_AtSerial.ReadResponse("^\\+QHTTPPOST: (.*)$", 60000, &response))
+        return RET_ERR(false, E_UNKNOWN);
+    parser.Parse(response.c_str());
+    if (parser.Size() < 1)
+        return RET_ERR(false, E_UNKNOWN);
+    if (strcmp(parser[0], "0") != 0)
+        return RET_ERR(false, E_UNKNOWN);
+    if (parser.Size() < 2) {
+        *responseCode = -1;
+    } else {
+        *responseCode = atoi(parser[1]);
+    }
+    
+    return RET_OK(true);
+}
+
+bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseCode, char *recvData, int recvDataSize) {
+    constexpr char HTTP_CONTENT_TYPE[] = "application/octet-stream";
+
+    NectisCellularHttpHeader header;
+    header["Accept"] = "*/*";
+    header["User-Agent"] = HTTP_USER_AGENT;
+    header["Connection"] = "Keep-Alive";
+    header["Content-Type"] = HTTP_CONTENT_TYPE;
+    
+    return HttpPost2(url, data, responseCode, recvData, recvDataSize, header);
+}
+
+bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseCode, char *recvData, int recvDataSize,const NectisCellularHttpHeader &header) {
+    std::string response;
+    ArgumentParser parser;
+    
+    if (strncmp(url, "https:", 6) == 0) {
+        if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"sslctxid\",1", "^OK$", 500, NULL))
+            return RET_ERR(false, E_UNKNOWN);
+        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"sslversion\",1,4", "^OK$", 500, NULL))
+            return RET_ERR(false, E_UNKNOWN);
+#if defined ARDUINO_WIO_3G
+        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,\"0XFFFF\"", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#elif defined ARDUINO_NECTIS
+        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"ciphersuite\",1,0XFFFF", "^OK$", 500, NULL)) return RET_ERR(false, E_UNKNOWN);
+#endif
+        if (!_AtSerial.WriteCommandAndReadResponse("AT+QSSLCFG=\"seclevel\",1,0", "^OK$", 500, NULL))
+            return RET_ERR(false, E_UNKNOWN);
+    }
+    
+    if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"requestheader\",1", "^OK$", 500, NULL))
+        return RET_ERR(false, E_UNKNOWN);
+    
+    if (!HttpSetUrl(url))
+        return RET_ERR(false, E_UNKNOWN);
+    
+    const char *host;
+    int hostLength;
+    const char *uri;
+    int uriLength;
+    if (!SplitUrl(url, &host, &hostLength, &uri, &uriLength))
+        return RET_ERR(false, E_UNKNOWN);
+    
+    StringBuilder headerSb;
+    headerSb.Write("POST ");
+    if (uriLength <= 0) {
+        headerSb.Write("/");
+    } else {
+        headerSb.Write(uri, uriLength);
+    }
+    headerSb.Write(" HTTP/1.1\r\n");
+    headerSb.Write("Host: ");
+    headerSb.Write(host, hostLength);
+    headerSb.Write("\r\n");
+    if (!headerSb.WriteFormat("Content-Length: %d\r\n", recvDataSize))
+        return RET_ERR(false, E_UNKNOWN);
+    for (auto it = header.begin(); it != header.end(); it++) {
+        headerSb.Write(it->first.c_str());
+        headerSb.Write(": ");
+        headerSb.Write(it->second.c_str());
+        headerSb.Write("\r\n");
+    }
+    headerSb.Write("\r\n");
+    DEBUG_PRINTLN("=== header");
+    DEBUG_PRINTLN(headerSb.GetString());
+    DEBUG_PRINTLN("===");
+    
+    StringBuilder str;
+    if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + recvDataSize))
+        return RET_ERR(false, E_UNKNOWN);
+    _AtSerial.WriteCommand(str.GetString());
+    if (!_AtSerial.ReadResponse("^CONNECT$", 60000, NULL))
+        return RET_ERR(false, E_UNKNOWN);
+    const char *headerStr = headerSb.GetString();
+    _AtSerial.WriteBinary((const byte *) headerStr, strlen(headerStr));
+    _AtSerial.WriteBinary((const byte *) data, recvDataSize);
+    if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
+        return RET_ERR(false, E_UNKNOWN);
+    if (!_AtSerial.ReadResponse("^\\+QHTTPPOST: (.*)$", 60000, &response))
+        return RET_ERR(false, E_UNKNOWN);
+    parser.Parse(response.c_str());
+    if (parser.Size() < 1)
+        return RET_ERR(false, E_UNKNOWN);
+    if (strcmp(parser[0], "0") != 0)
+        return RET_ERR(false, E_UNKNOWN);
+    if (parser.Size() < 2) {
+        *responseCode = -1;
+    } else {
+        *responseCode = atoi(parser[1]);
+    }
+    
+    if(parser.Size() == 3) {
+        int contentLength = atoi(parser[2]);
+
+        Serial.print("contentLength=");
+        Serial.print(contentLength);
+        Serial.println("");
+
+        if(contentLength > 0)
+        {
+            if((contentLength + 1) < recvDataSize) {
+                _AtSerial.WriteCommand("AT+QHTTPREAD");
+                if (!_AtSerial.ReadResponse("^CONNECT$", 1000, NULL))
+                    return RET_ERR(-1, E_UNKNOWN);
+                if (!_AtSerial.ReadBinary((byte *) recvData, contentLength, 60000))
+                    return RET_ERR(-1, E_UNKNOWN);
+                recvData[contentLength] = '\0';
+
+                if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
+                    return RET_ERR(-1, E_UNKNOWN);
+            }
+        }
+        else
+        {
+            return RET_ERR(-1, E_UNKNOWN);
+        }
+    }
+    
+    return RET_OK(true);
+}
+
+
+void NectisCellular::PostDataViaTcp(byte *post_data, int data_size) {
+    Serial.println("### Post BINARY/TCP.");
+    
+    constexpr char HTTP_CONTENT_TYPE[] = "application/octet-stream";
+
+    NectisCellularHttpHeader header;
+    header["Accept"] = "*/*";
+    header["User-Agent"] = HTTP_USER_AGENT;
+    header["Connection"] = "Keep-Alive";
+    header["Content-Type"] = HTTP_CONTENT_TYPE;
+    
+    int status;
+    if (!HttpPost(ENDPOINT_URL, post_data, (const int)data_size, &status, header)) {
+        Serial.println("### ERROR! ###");
+        goto err;
+    }
+    Serial.print("Status=");
+    Serial.println(status);
+
+err:
+    Serial.println("### Wait.");
+    delay(INTERVAL);
+}
+
+void NectisCellular::PostDataViaTcp(char *post_data, int data_size) {
+    Serial.println("### Post JSON/TCP.");
+    
+    constexpr char HTTP_CONTENT_TYPE[] = "application/json";
+
+    NectisCellularHttpHeader header;
+    header["Accept"] = "*/*";
+    header["User-Agent"] = HTTP_USER_AGENT;
+    header["Connection"] = "Keep-Alive";
+    header["Content-Type"] = HTTP_CONTENT_TYPE;
+    
+    int status;
+    if (!HttpPost(ENDPOINT_URL, post_data, (const int)data_size, &status, header)) {
+        Serial.println("### ERROR! ###");
+        goto err;
+    }
+    Serial.print("Status=");
+    Serial.println(status);
+
+err:
+    Serial.println("### Wait.");
+    delay(INTERVAL);
+}
+
+void NectisCellular::PostDataViaUdp(byte *post_data, int data_size) {
+    Serial.println("### Open Socket.");
+
+    int connectId;
+    connectId = SocketOpen("uni.soracom.io", 23080, NECTIS_UDP);
+    if (connectId < 0) {
+        Serial.println("### ERROR! ###");
+        goto err;
+    }
+    
+    Serial.println("### Send BINARY/UDP.");
+    if (!SocketSend(connectId, post_data, data_size)) {
+        Serial.println("### ERROR! ###");
+        goto err_close;
+    }
+    
+    Serial.println("### Receive.");
+    int length;
+    length = SocketReceive(connectId, post_data, data_size, RECEIVE_TIMEOUT);
+    if (length < 0) {
+        Serial.println("### ERROR! ###");
+        Serial.println(length);
+        goto err_close;
+    }
+    if (length == 0) {
+        Serial.println("### RECEIVE TIMEOUT! ###");
+        goto err_close;
+    }
+    Serial.print("Receive=");
+    Serial.print((char *)post_data);
+    Serial.println("");
+
+err_close:
+    Serial.println("### Close.\n");
+    if (!SocketClose(connectId)) {
+        Serial.println("### ERROR! ###");
+        goto err;
+    }
+
+err:
+    delay(INTERVAL);
+}
+
+void NectisCellular::PostDataViaUdp(char *post_data, int data_size) {
+    Serial.println("### Open Socket.");
+
+    int connectId;
+    connectId = SocketOpen("uni.soracom.io", 23080, NECTIS_UDP);
+    if (connectId < 0) {
+        Serial.println("### ERROR! ###");
+        goto err;
+    }
+    
+    Serial.println("### Send JSON/UDP.");
+    if (!SocketSend(connectId, post_data)) {
+        Serial.println("### ERROR! ###");
+        goto err_close;
+    }
+    
+    Serial.println("### Receive.");
+    int length;
+    length = SocketReceive(connectId, post_data, data_size, RECEIVE_TIMEOUT);
+    if (length < 0) {
+        Serial.println("### ERROR! ###");
+        Serial.println(length);
+        goto err_close;
+    }
+    if (length == 0) {
+        Serial.println("### RECEIVE TIMEOUT! ###");
+        goto err_close;
+    }
+    Serial.print("Receive=");
+    Serial.print(post_data);
+    Serial.println("");
+
+err_close:
+    Serial.println("### Close.\n");
+    if (!SocketClose(connectId)) {
+        Serial.println("### ERROR! ###");
+        goto err;
+    }
+
+err:
+    delay(INTERVAL);
 }

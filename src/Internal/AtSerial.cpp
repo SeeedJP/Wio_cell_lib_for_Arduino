@@ -1,9 +1,9 @@
-#include "../WioCellularConfig.h"
+#include "../NectisCellularConfig.h"
 #include "AtSerial.h"
 
 #include "Debug.h"
 #include "slre.901d42c/slre.h"
-#include "../WioCellular.h"
+#include "../NectisCellular.h"
 #include <string.h>
 
 #define READ_BYTE_TIMEOUT	(10)
@@ -12,7 +12,7 @@
 #define CHAR_CR (0x0d)
 #define CHAR_LF (0x0a)
 
-AtSerial::AtSerial(SerialAPI* serial, WioCellular* wio) : _Serial(serial), _Wio(wio), _EchoOn(true)
+AtSerial::AtSerial(SerialAPI* serial, NectisCellular* nectis) : _Serial(serial), _Nectis(nectis), _EchoOn(true)
 {
 }
 
@@ -120,7 +120,7 @@ bool AtSerial::ReadResponse(const char* pattern, unsigned long timeout, std::str
 		std::string response;
 		if (!ReadResponseInternal(internalPattern, _EchoOn ? timeout : READ_BYTE_TIMEOUT, &response, RESPONSE_MAX_LENGTH)) return false;
 
-		//if (_Wio->ReadResponseCallback(response.c_str())) {
+		//if (_Nectis->ReadResponseCallback(response.c_str())) {
 		//	continue;
 		//}
 

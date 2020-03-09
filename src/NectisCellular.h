@@ -1,18 +1,17 @@
 #pragma once
 
-#include "WioCellularConfig.h"
+#include "NectisCellularConfig.h"
 
 #include <IPAddress.h>
 #include "Internal/AtSerial.h"
-#include "Internal/WioSK6812.h"
 #include <time.h>
 #include <string>
-#include "WioCellularHttpHeader.h"
+#include "NectisCellularHttpHeader.h"
 
-#define WIO_TCP		(WioCellular::SOCKET_TCP)
-#define WIO_UDP		(WioCellular::SOCKET_UDP)
+#define NECTIS_TCP		(NectisCellular::SOCKET_TCP)
+#define NECTIS_UDP		(NectisCellular::SOCKET_UDP)
 
-class WioCellular
+class NectisCellular
 {
 public:
 	enum ErrorCodeType {
@@ -41,7 +40,6 @@ public:
 private:
 	SerialAPI _SerialAPI;
 	AtSerial _AtSerial;
-	WioSK6812 _Led;
 	ErrorCodeType _LastErrorCode;
 	AccessTechnologyType _AccessTechnology;
 	SelectNetworkModeType _SelectNetworkMode;
@@ -72,14 +70,11 @@ public:
 	//bool ReadResponseCallback(const char* response);	// Internal use only.
 
 public:
-	WioCellular();
+	NectisCellular();
 	ErrorCodeType GetLastError() const;
 	void Init();
 	void PowerSupplyCellular(bool on);
-	void PowerSupplyLed(bool on);
 	void PowerSupplyGrove(bool on);
-	void PowerSupplySD(bool on);
-	void LedSetRGB(uint8_t red, uint8_t green, uint8_t blue);
 	bool TurnOnOrReset();
 	bool TurnOff();
 	//bool Sleep();
@@ -92,9 +87,9 @@ public:
 	int GetReceivedSignalStrength();
 	bool GetTime(struct tm* tim);
 
-#if defined ARDUINO_WIO_LTE_M1NB1_BG96
+#if defined ARDUINO_NECTIS
 	void SetAccessTechnology(AccessTechnologyType technology);
-#endif // ARDUINO_WIO_LTE_M1NB1_BG96
+#endif // ARDUINO_NECTIS
 	void SetSelectNetwork(SelectNetworkModeType mode, const char* plmn = NULL);
 	bool WaitForCSRegistration(long timeout = 120000);
 	bool WaitForPSRegistration(long timeout = 120000);
@@ -117,13 +112,37 @@ public:
 	bool SocketClose(int connectId);
 
 	int HttpGet(const char* url, char* data, int dataSize);
-	int HttpGet(const char* url, char* data, int dataSize, const WioCellularHttpHeader& header);
+	int HttpGet(const char* url, char* data, int dataSize, const NectisCellularHttpHeader& header);
 	bool HttpPost(const char* url, const char* data, int* responseCode);
-	bool HttpPost(const char* url, const char* data, int* responseCode, const WioCellularHttpHeader& header);
+	bool HttpPost(const char* url, const char* data, int* responseCode, const NectisCellularHttpHeader& header);
 
 	bool SendUSSD(const char* in, char* out, int outSize);
 
 public:
 	static void SystemReset();
 
+/*
+ * The functions that have customized for Nectis and should be called from outside the library.
+ * For CAMI qibanca nectis series on nRF52840. 
+ */
+public:
+	void SoftReset();
+	void Begin();
+	void End();
+	void InitLteM();
+	void InitNbIoT();
+
+	int GetReceivedSignalStrengthIndicator();
+	bool IsTimeGot(struct tm *tim, bool jst);
+	void GetCurrentTime(struct tm *tim, bool jst);
+	
+	bool HttpPost(const char* url, const char* data, const int dataSize, int* responseCode, const NectisCellularHttpHeader& header);
+	bool HttpPost(const char *url, const byte *data, const int dataSize, int *responseCode, const NectisCellularHttpHeader &header);
+	bool HttpPost2(const char *url, const char *data, int *responseCode, char *recv_data, int recv_dataSize);
+	bool HttpPost2(const char *url, const char *data, int *responseCode, char *recv_data, int recv_dataSize , const NectisCellularHttpHeader &header);
+
+	void PostDataViaTcp(byte *post_data, int data_size);
+	void PostDataViaTcp(char *post_data, int data_size);
+	void PostDataViaUdp(byte *post_data, int data_size);
+	void PostDataViaUdp(char *post_data, int data_size);
 };

@@ -1,13 +1,13 @@
-#include "../WioCellularConfig.h"
+#include "../NectisCellularConfig.h"
 #include "Debug.h"
 
-#include "../WioCellularHardware.h"
+#include "../NectisCellularHardware.h"
 
-#ifdef WIO_DEBUG
+#ifdef CELLULAR_DEBUG
 
 void Debug::Print(const char* str)
 {
-	SerialUSB.print(str);
+	Serial.print(str);
 }
 
 void Debug::Println(const char* str)
@@ -16,4 +16,4 @@ void Debug::Println(const char* str)
 	Print("\r\n");
 }
 
-#endif // WIO_DEBUG
+#endif // CELLULAR_DEBUG

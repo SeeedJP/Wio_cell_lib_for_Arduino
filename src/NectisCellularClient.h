@@ -1,22 +1,22 @@
 #pragma once
 
-#include "WioCellularConfig.h"
+#include "NectisCellularConfig.h"
 
-#include "WioCellular.h"
+#include "NectisCellular.h"
 #include <Client.h>
 #include <queue>
 
-class WioCellularClient : public Client {
+class NectisCellularClient : public Client {
 
 protected:
-	WioCellular* _Wio;
+	NectisCellular* _Nectis;
 	int _ConnectId;
 	std::queue<byte> _ReceiveQueue;
 	byte* _ReceiveBuffer;
 
 public:
-	WioCellularClient(WioCellular* wio);
-	virtual ~WioCellularClient();
+	NectisCellularClient(NectisCellular* Nectis);
+	virtual ~NectisCellularClient();
 
 	virtual int connect(IPAddress ip, uint16_t port);
 	virtual int connect(const char* host, uint16_t port);
