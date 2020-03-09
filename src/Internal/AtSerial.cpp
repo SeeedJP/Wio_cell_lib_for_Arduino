@@ -3,7 +3,6 @@
 
 #include "Debug.h"
 #include "slre.901d42c/slre.h"
-#include "../WioCellular.h"
 #include "../NectisCellular.h"
 #include <string.h>
 
@@ -13,7 +12,8 @@
 #define CHAR_CR (0x0d)
 #define CHAR_LF (0x0a)
 
-AtSerial::AtSerial(SerialAPI *serial, WioCellular *wio) : _Serial(serial), _Wio(wio), _EchoOn(true) {
+AtSerial::AtSerial(SerialAPI* serial, NectisCellular* nectis) : _Serial(serial), _Nectis(nectis), _EchoOn(true)
+{
 }
 AtSerial::AtSerial(SerialAPI *serial, NectisCellular *nectis) : _Serial(serial), _Nectis(nectis), _EchoOn(true) {
 }
@@ -67,41 +67,35 @@ void AtSerial::WriteCommand(const char *command) {
     _Serial->Write((byte)CHAR_CR);
 }
 
-bool AtSerial::ReadResponseInternal(const char *pattern, unsigned long timeout, std::string *response,
-                                    int responseMaxLength) {
-    DEBUG_PRINT("-> ");
-    
-    response->clear();
-    
-    Stopwatch sw;
-    while (true) {
-        if (response->size() >= (size_t)(responseMaxLength + 2)) {
-            DEBUG_PRINTLN("### OVERFLOW; responseMaxLength ###");
-            return false;
-        }
-        
-        sw.Restart();
-        if (!WaitForAvailable(&sw, timeout)) {
-            DEBUG_PRINTLN("### TIMEOUT; ReadResponseInternal => WaitForAvailable ###");
-            return false;
-        }
-        
-        response->push_back(_Serial->Read());
-        
-        if (response->size() >= 2 && response->at(response->size() - 2) == CHAR_CR &&
-            response->at(response->size() - 1) == CHAR_LF) {
-            response->resize(response->size() - 2);
-            DEBUG_PRINTLN(response->c_str());
-            return true;
-        }
-        
-        if (pattern != NULL) {
-            if (slre_match(pattern, response->c_str(), response->size(), NULL, 0, 0) >= 1) {
-                DEBUG_PRINTLN(response->c_str());
-                return true;
-            }
-        }
-    }
+bool AtSerial::ReadResponse(const char* pattern, unsigned long timeout, std::string* capture)
+{
+	const char* internalPattern = NULL;
+	if (pattern[strlen(pattern) - 1] != '$') {
+		internalPattern = pattern;
+	}
+
+	Stopwatch sw;
+	sw.Restart();
+	while (true) {
+		if (!WaitForAvailable(&sw, timeout)) return false;
+
+		std::string response;
+		if (!ReadResponseInternal(internalPattern, _EchoOn ? timeout : READ_BYTE_TIMEOUT, &response, RESPONSE_MAX_LENGTH)) return false;
+
+		//if (_Nectis->ReadResponseCallback(response.c_str())) {
+		//	continue;
+		//}
+
+		slre_cap cap;
+		cap.len = 0;
+		if (slre_match(pattern, response.c_str(), response.size(), &cap, 1, 0) >= 1) {
+			if (capture != NULL) {
+				capture->resize(cap.len);
+				memcpy(&(*capture)[0], cap.ptr, cap.len);
+			}
+			return true;
+		}
+	}
 }
 
 bool AtSerial::ReadResponse(const char *pattern, unsigned long timeout, std::string *capture) {

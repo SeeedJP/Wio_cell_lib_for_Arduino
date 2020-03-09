@@ -1,10 +1,13 @@
 #include "../NectisCellularConfig.h"
 #include "Debug.h"
 
-#ifdef NECTIS_DEBUG
+#include "../NectisCellularHardware.h"
 
-void Debug::Print(const char *str) {
-    Serial.print(str);
+#ifdef CELLULAR_DEBUG
+
+void Debug::Print(const char* str)
+{
+	Serial.print(str);
 }
 
 void Debug::Println(const char *str) {
@@ -12,4 +15,4 @@ void Debug::Println(const char *str) {
     Print("\r\n");
 }
 
-#endif // NECTIS_DEBUG
+#endif // CELLULAR_DEBUG

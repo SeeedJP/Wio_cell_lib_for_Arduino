@@ -4,5 +4,6 @@
 
 #include <map>
 
-class NectisCellularHttpHeader : public std::map<String, String> {
+class NectisCellularHttpHeader : public std::map<String, String>
+{
 };
