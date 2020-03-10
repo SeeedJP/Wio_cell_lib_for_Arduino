@@ -141,8 +141,8 @@ public:
 	bool HttpPost2(const char *url, const char *data, int *responseCode, char *recv_data, int recv_dataSize);
 	bool HttpPost2(const char *url, const char *data, int *responseCode, char *recv_data, int recv_dataSize , const NectisCellularHttpHeader &header);
 
-	void PostDataViaTcp(byte *post_data, int data_size);
-	void PostDataViaTcp(char *post_data, int data_size);
+	void PostDataViaHTTP(byte *post_data, int data_size);
+	void PostDataViaHTTP(char *post_data, int data_size);
 	void PostDataViaUdp(byte *post_data, int data_size);
 	void PostDataViaUdp(char *post_data, int data_size);
 };

@@ -1460,8 +1460,8 @@ bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseC
 }
 
 
-void NectisCellular::PostDataViaTcp(byte *post_data, int data_size) {
-	Serial.println("### Post BINARY/TCP.");
+void NectisCellular::PostDataViaHTTP(byte *post_data, int data_size) {
+	Serial.println("### Post BINARY/HTTP.");
 	
 	constexpr char HTTP_CONTENT_TYPE[] = "application/octet-stream";
 
@@ -1484,8 +1484,8 @@ err:
 	delay(INTERVAL);
 }
 
-void NectisCellular::PostDataViaTcp(char *post_data, int data_size) {
-	Serial.println("### Post JSON/TCP.");
+void NectisCellular::PostDataViaHTTP(char *post_data, int data_size) {
+	Serial.println("### Post JSON/HTTP.");
 	
 	constexpr char HTTP_CONTENT_TYPE[] = "application/json";
 
