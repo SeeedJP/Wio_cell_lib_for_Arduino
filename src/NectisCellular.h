@@ -138,8 +138,8 @@ public:
 	
 	bool HttpPost(const char* url, const char* data, const int dataSize, int* responseCode, const NectisCellularHttpHeader& header);
 	bool HttpPost(const char *url, const byte *data, const int dataSize, int *responseCode, const NectisCellularHttpHeader &header);
-	bool HttpPost2(const char *url, const char *data, int *responseCode, char *recv_data, int recv_dataSize);
-	bool HttpPost2(const char *url, const char *data, int *responseCode, char *recv_data, int recv_dataSize , const NectisCellularHttpHeader &header);
+	bool HttpPost2(const char *url, const char *postData, int postDataSize, char *recvData, int recvDataSize, int *respCode);
+	bool HttpPost2(const char *url, const char *postData, int postDataSize, char *recvData, int recvDataSize, int *respCode, const NectisCellularHttpHeader &header);
 
 	void PostDataViaHTTP(byte *post_data, int data_size);
 	void PostDataViaHTTP(char *post_data, int data_size);
