@@ -11,8 +11,8 @@ void Debug::Print(const char* str)
 }
 
 void Debug::Println(const char *str) {
-    Print(str);
-    Print("\r\n");
+  Print(str);
+  Print("\r\n");
 }
 
 #endif // CELLULAR_DEBUG

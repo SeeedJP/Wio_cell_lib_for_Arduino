@@ -8,9 +8,8 @@
 class Debug
 {
 public:
-    static void Print(const char* str);
-    static void Println(const char* str);
-
+  static void Print(const char* str);
+  static void Println(const char* str);
 };
 
 #else

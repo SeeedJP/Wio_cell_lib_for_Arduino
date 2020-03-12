@@ -907,10 +907,8 @@ int NectisCellular::HttpGet(const char* url, char* data, int dataSize, const Nec
 		if (contentLength + 1 > dataSize) return RET_ERR(-1, E_UNKNOWN);
 		if (!_AtSerial.ReadBinary((byte*)data, contentLength, 60000)) return RET_ERR(-1, E_UNKNOWN);
 		data[contentLength] = '\0';
-
 		if (!_AtSerial.ReadResponse("^OK$", 1000, NULL)) return RET_ERR(-1, E_UNKNOWN);
-	}
-	else {
+	}	else {
 		if (!_AtSerial.ReadResponseQHTTPREAD(data, dataSize, 60000)) return RET_ERR(-1, E_UNKNOWN);
 		contentLength = strlen(data);
 	}
@@ -1338,22 +1336,20 @@ bool NectisCellular::HttpPost(const char *url, const byte *data, const int dataS
 	return RET_OK(true);
 }
 
-bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseCode, char *recvData, int recvDataSize) {
-	constexpr char HTTP_CONTENT_TYPE[] = "application/octet-stream";
-
+bool NectisCellular::HttpPost2(const char *url, const char *postData, int postDataSize, char *recvData, int recvDataSize, int *respCode) {
 	NectisCellularHttpHeader header;
 	header["Accept"] = "*/*";
 	header["User-Agent"] = HTTP_USER_AGENT;
 	header["Connection"] = "Keep-Alive";
-	header["Content-Type"] = HTTP_CONTENT_TYPE;
+	header["Content-Type"] = "application/json";
 	
-	return HttpPost2(url, data, responseCode, recvData, recvDataSize, header);
+	return HttpPost2(url, postData, postDataSize, recvData, recvDataSize, respCode, header);
 }
 
-bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseCode, char *recvData, int recvDataSize,const NectisCellularHttpHeader &header) {
+bool NectisCellular::HttpPost2(const char *url, const char *postData, int postDataSize, char *recvData, int recvDataSize, int *respCode, const NectisCellularHttpHeader &header) {
 	std::string response;
 	ArgumentParser parser;
-    
+
 	if (strncmp(url, "https:", 6) == 0) {
 		if (!_AtSerial.WriteCommandAndReadResponse("AT+QHTTPCFG=\"sslctxid\",1", "^OK$", 500, NULL))
 			return RET_ERR(false, E_UNKNOWN);
@@ -1392,7 +1388,7 @@ bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseC
 	headerSb.Write("Host: ");
 	headerSb.Write(host, hostLength);
 	headerSb.Write("\r\n");
-	if (!headerSb.WriteFormat("Content-Length: %d\r\n", recvDataSize))
+	if (!headerSb.WriteFormat("Content-Length: %d\r\n", postDataSize))
 		return RET_ERR(false, E_UNKNOWN);
 	for (auto it = header.begin(); it != header.end(); it++) {
 		headerSb.Write(it->first.c_str());
@@ -1406,14 +1402,14 @@ bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseC
 	DEBUG_PRINTLN("===");
     
 	StringBuilder str;
-	if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + recvDataSize))
+	if (!str.WriteFormat("AT+QHTTPPOST=%d", headerSb.Length() + postDataSize))
 		return RET_ERR(false, E_UNKNOWN);
 	_AtSerial.WriteCommand(str.GetString());
 	if (!_AtSerial.ReadResponse("^CONNECT$", 60000, NULL))
 		return RET_ERR(false, E_UNKNOWN);
 	const char *headerStr = headerSb.GetString();
 	_AtSerial.WriteBinary((const byte *) headerStr, strlen(headerStr));
-	_AtSerial.WriteBinary((const byte *) data, recvDataSize);
+	_AtSerial.WriteBinary((const byte *) postData, postDataSize);
 	if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
 		return RET_ERR(false, E_UNKNOWN);
 	if (!_AtSerial.ReadResponse("^\\+QHTTPPOST: (.*)$", 60000, &response))
@@ -1424,38 +1420,34 @@ bool NectisCellular::HttpPost2(const char *url, const char *data, int *responseC
 	if (strcmp(parser[0], "0") != 0)
 		return RET_ERR(false, E_UNKNOWN);
 	if (parser.Size() < 2) {
-		*responseCode = -1;
+		*respCode = -1;
 	} else {
-		*responseCode = atoi(parser[1]);
+		*respCode = atoi(parser[1]);
 	}
     
 	if(parser.Size() == 3) {
 		int contentLength = atoi(parser[2]);
 
-		Serial.print("contentLength=");
-		Serial.print(contentLength);
-		Serial.println("");
-
-		if(contentLength > 0)
-		{
-			if((contentLength + 1) < recvDataSize) {
-				_AtSerial.WriteCommand("AT+QHTTPREAD");
-				if (!_AtSerial.ReadResponse("^CONNECT$", 1000, NULL))
-					return RET_ERR(-1, E_UNKNOWN);
-				if (!_AtSerial.ReadBinary((byte *) recvData, contentLength, 60000))
-					return RET_ERR(-1, E_UNKNOWN);
-				recvData[contentLength] = '\0';
-
-				if (!_AtSerial.ReadResponse("^OK$", 1000, NULL))
-					return RET_ERR(-1, E_UNKNOWN);
-			}
-		}
-		else
-		{
+		if(contentLength <= 0)	{
 			return RET_ERR(-1, E_UNKNOWN);
 		}
+
+		if((contentLength + 1) < recvDataSize) {
+			_AtSerial.WriteCommand("AT+QHTTPREAD");
+			if (!_AtSerial.ReadResponse("^CONNECT$", 1000, NULL)) {
+				return RET_ERR(-1, E_UNKNOWN);
+			}
+			if (!_AtSerial.ReadBinary((byte *) recvData, contentLength, 60000)) {
+				return RET_ERR(-1, E_UNKNOWN);
+			}
+			recvData[contentLength] = '\0';
+
+			if (!_AtSerial.ReadResponse("^OK$", 1000, NULL)) {
+				return RET_ERR(-1, E_UNKNOWN);
+			}
+		}
 	}
-    
+
 	return RET_OK(true);
 }
 
