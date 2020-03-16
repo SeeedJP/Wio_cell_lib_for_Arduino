@@ -896,7 +896,14 @@ int NectisCellular::HttpGet(const char* url, char* data, int dataSize, const Nec
 	if (!_AtSerial.ReadResponse("^OK$", 1000, NULL)) return RET_ERR(false, E_UNKNOWN);
 	if (!_AtSerial.ReadResponse("^\\+QHTTPGET: (.*)$", 60000, &response)) return RET_ERR(-1, E_UNKNOWN);
 
+	if (std::equal(response.begin(), response.begin() + 1, "200") != 0) {
+		Serial.println("### ERROR");
+		Serial.printf("response=%s\n", &response);
+		return RET_ERR(-1, E_UNKNOWN);
+	}
+
 	parser.Parse(response.c_str());
+
 	if (parser.Size() < 1) return RET_ERR(-1, E_UNKNOWN);
 	if (strcmp(parser[0], "0") != 0) return RET_ERR(-1, E_UNKNOWN);
 	int contentLength = parser.Size() >= 3 ? atoi(parser[2]) : -1;
