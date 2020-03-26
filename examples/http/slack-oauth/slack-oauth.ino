@@ -42,7 +42,7 @@ void setup() {
 }
 
 static bool slackPostMessage(int* status, const char* token, const char* channel, const char* text) {
-  char* authorization = (char*)malloc(strlen(token) + 8);
+  char authorization[7 + strlen(token) + 1];
   sprintf(authorization, "Bearer %s", token);
 
   WioCellularHttpHeader header;
@@ -52,7 +52,7 @@ static bool slackPostMessage(int* status, const char* token, const char* channel
   header["Content-Type"] = "application/json";
   header["Authorization"] = authorization;
 
-  char* data = (char*)malloc(strlen(token) + strlen(channel) + strlen(text) + 36);
+  char data[10 + strlen(token) + 13 + strlen(channel) + 10 + strlen(text) + 2 + 1];
   sprintf(data, "{\"token\":\"%s\",\"channel\":\"%s\",\"text\":\"%s\"}", token, channel, text);
 
 #if defined(WIO_DEBUG)
@@ -67,8 +67,6 @@ static bool slackPostMessage(int* status, const char* token, const char* channel
 #endif
 
   bool ret = Wio.HttpPost(SLACK_URL, data, status, header);
-  free(authorization);
-  free(data);
   return ret;
 }
 
