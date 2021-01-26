@@ -22,6 +22,10 @@ void setup() {
 
   SerialUSB.println("### Setup pin mode.");
   pinMode(ROTARY_ANGLE_PIN, INPUT_ANALOG);
+
+#ifdef ARDUINO_ARCH_STM32
+  analogReadResolution(12);
+#endif // ARDUINO_ARCH_STM32
 }
 
 void loop() {
@@ -35,4 +39,3 @@ void loop() {
   
   delay(INTERVAL);
 }
-
