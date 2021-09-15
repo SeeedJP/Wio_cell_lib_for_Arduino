@@ -46,19 +46,19 @@ void loop() {
 //
 
 void AccelInitialize() {
-  WireI2C.begin();
-  WireI2C.beginTransmission(I2C_ADDRESS);
-  WireI2C.write(REG_POWER_CTL);
-  WireI2C.write(0x08);
-  WireI2C.endTransmission();
+  Wire.begin();
+  Wire.beginTransmission(I2C_ADDRESS);
+  Wire.write(REG_POWER_CTL);
+  Wire.write(0x08);
+  Wire.endTransmission();
 }
 
 void AccelReadXYZ(float* x, float* y, float* z) {
-  WireI2C.beginTransmission(I2C_ADDRESS);
-  WireI2C.write(REG_DATAX0);
-  WireI2C.endTransmission();
+    Wire.beginTransmission(I2C_ADDRESS);
+    Wire.write(REG_DATAX0);
+    Wire.endTransmission();
 
-  if (WireI2C.requestFrom(I2C_ADDRESS, 6) != 6) {
+  if (Wire.requestFrom(I2C_ADDRESS, 6) != 6) {
     *x = 0;
     *y = 0;
     *z = 0;
@@ -66,14 +66,14 @@ void AccelReadXYZ(float* x, float* y, float* z) {
   }
 
   int16_t val;
-  ((uint8_t*)&val)[0] = WireI2C.read();
-  ((uint8_t*)&val)[1] = WireI2C.read();
+  ((uint8_t*)&val)[0] = Wire.read();
+  ((uint8_t*)&val)[1] = Wire.read();
   *x = val * 2.0 / 512;
-  ((uint8_t*)&val)[0] = WireI2C.read();
-  ((uint8_t*)&val)[1] = WireI2C.read();
+  ((uint8_t*)&val)[0] = Wire.read();
+  ((uint8_t*)&val)[1] = Wire.read();
   *y = val * 2.0 / 512;
-  ((uint8_t*)&val)[0] = WireI2C.read();
-  ((uint8_t*)&val)[1] = WireI2C.read();
+  ((uint8_t*)&val)[0] = Wire.read();
+  ((uint8_t*)&val)[1] = Wire.read();
   *z = val * 2.0 / 512;
 }
 

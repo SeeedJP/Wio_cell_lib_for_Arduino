@@ -53,14 +53,17 @@
 
 extern HardwareSerial SerialUSB;
 extern HardwareSerial SerialModule;
-extern HardwareSerial& SerialUART;
-extern TwoWire& WireI2C;
+
+extern HardwareSerial& SerialUART;		// Keep compatibility
+extern TwoWire& WireI2C;				// Keep compatibility
 
 #else
 
 extern HardwareSerial SerialUSB;
 extern HardwareSerial SerialModule;
-extern HardwareSerial SerialUART;
-extern TwoWire WireI2C;
+
+extern HardwareSerial Serial;
+extern HardwareSerial& SerialUART;		// Keep compatibility
+extern TwoWire WireI2C;					// Keep compatibility
 
 #endif // ARDUINO_ARCH_STM32
